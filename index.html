@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tema Urban Hospital — Maintenance Fault Reporting System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --green-900: #064e3b;
+  --green-800: #065f46;
+  --green-700: #047857;
+  --green-600: #059669;
+  --green-500: #10b981;
+  --green-400: #34d399;
+  --green-100: #d1fae5;
+  --green-50:  #ecfdf5;
+  --gold:      #f59e0b;
+  --gold-light:#fef3c7;
+  --white:     #ffffff;
+  --gray-50:   #f9fafb;
+  --gray-100:  #f3f4f6;
+  --gray-200:  #e5e7eb;
+  --gray-300:  #d1d5db;
+  --gray-500:  #6b7280;
+  --gray-700:  #374151;
+  --gray-900:  #111827;
+  --red-500:   #ef4444;
+  --red-100:   #fee2e2;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.1);
+  --shadow:    0 4px 16px rgba(0,0,0,.12);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,.15);
+  --radius:    12px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-900);
+  min-height: 100vh;
+}
+
+/* ─── LOGIN PAGE ─────────────────────────────────────── */
+#loginPage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(145deg, var(--green-900) 0%, var(--green-700) 55%, var(--green-500) 100%);
+  position: relative;
+  overflow: hidden;
+}
+#loginPage::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+}
+
+.login-header {
+  text-align: center;
+  padding: 48px 24px 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.hospital-logo {
+  width: 90px; height: 90px;
+  background: var(--white);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 0 0 6px rgba(255,255,255,.2), var(--shadow-lg);
+  overflow: hidden;
+}
+.hospital-logo svg { width: 60px; height: 60px; }
+
+.login-header h1 {
+  font-family: 'Merriweather', serif;
+  font-size: clamp(1.2rem, 4vw, 1.7rem);
+  color: var(--white);
+  letter-spacing: .5px;
+  line-height: 1.3;
+}
+.login-header p {
+  color: var(--green-100);
+  font-size: .9rem;
+  margin-top: 6px;
+  font-weight: 300;
+}
+.maintenance-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.3);
+  color: var(--white);
+  font-size: .8rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-top: 10px;
+}
+.maintenance-badge svg { width: 14px; height: 14px; }
+
+.login-card {
+  background: var(--white);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 36px 28px 40px;
+  margin: 24px 0 0;
+  flex: 1;
+  position: relative; z-index: 1;
+  box-shadow: 0 -8px 40px rgba(0,0,0,.15);
+  max-width: 440px;
+  width: 100%;
+  align-self: center;
+  border-radius: var(--radius);
+  margin: 24px auto;
+  flex: unset;
+}
+
+.login-card h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: 6px;
+}
+.login-card p.sub { color: var(--gray-500); font-size: .875rem; margin-bottom: 24px; }
+
+.form-group { margin-bottom: 18px; }
+.form-group label {
+  display: block;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.form-group select, .form-group input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: .95rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--gray-900);
+  background: var(--white);
+  transition: border-color .2s, box-shadow .2s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.form-group select:focus, .form-group input:focus {
+  outline: none;
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 3px rgba(16,185,129,.12);
+}
+.select-wrap { position: relative; }
+.select-wrap::after {
+  content: '▾';
+  position: absolute; right: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-500);
+  pointer-events: none;
+  font-size: .8rem;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 13px;
+  background: linear-gradient(135deg, var(--green-700), var(--green-500));
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: .3px;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(5,150,105,.35); }
+.btn-primary:active { transform: translateY(0); }
+
+.login-footer {
+  text-align: center;
+  padding: 16px;
+  color: var(--green-100);
+  font-size: .78rem;
+  position: relative; z-index: 1;
+}
+
+/* ─── MAIN APP ────────────────────────────────────────── */
+#appPage { display: none; }
+
+.topbar {
+  background: linear-gradient(135deg, var(--green-900), var(--green-800));
+  color: var(--white);
+  padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 60px;
+  box-shadow: var(--shadow);
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-logo {
+  width: 36px; height: 36px;
+  background: var(--white);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.topbar-logo svg { width: 22px; height: 22px; }
+.topbar-title { font-size: .9rem; font-weight: 600; line-height: 1.2; }
+.topbar-title span { display: block; font-size: .75rem; font-weight: 400; color: var(--green-100); }
+
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.user-chip {
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: .8rem;
+  color: var(--white);
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-logout {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.2);
+  color: var(--white);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: .8rem;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: background .2s;
+}
+.btn-logout:hover { background: rgba(255,255,255,.2); }
+
+/* NAV TABS */
+.nav-tabs {
+  background: var(--green-800);
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 2px solid var(--green-700);
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tab {
+  padding: 11px 18px;
+  color: var(--green-100);
+  font-size: .85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color .2s, border-color .2s;
+  display: flex; align-items: center; gap: 6px;
+  background: none; border-left: none; border-right: none; border-top: none;
+  font-family: 'Inter', sans-serif;
+}
+.nav-tab:hover { color: var(--white); }
+.nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.nav-tab svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+/* PAGE CONTENT */
+.page-content { display: none; padding: 24px 20px; max-width: 900px; margin: 0 auto; }
+.page-content.active { display: block; }
+
+/* ─── CARDS ──────────────────────────────────────────── */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-200);
+  margin-bottom: 20px;
+}
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gray-900);
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title .icon-wrap {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--green-50);
+  display: flex; align-items: center; justify-content: center;
+}
+.card-title .icon-wrap svg { width: 16px; height: 16px; color: var(--green-700); }
+
+/* ─── FAULT REPORT FORM ───────────────────────────────── */
+.section-label {
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--green-700);
+  margin: 20px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--green-100);
+}
+.section-label:first-child { margin-top: 0; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.fault-category {
+  background: var(--gray-50);
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 12px;
+  transition: border-color .2s;
+}
+.fault-category.has-selection { border-color: var(--green-400); background: var(--green-50); }
+
+.cat-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.cat-icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.1rem;
+}
+.cat-title { font-size: .9rem; font-weight: 600; color: var(--gray-800); }
+.cat-subtitle { font-size: .78rem; color: var(--gray-500); }
+
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: .9rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--gray-900);
+  resize: vertical;
+  min-height: 70px;
+  transition: border-color .2s, box-shadow .2s;
+}
+textarea:focus {
+  outline: none;
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 3px rgba(16,185,129,.12);
+}
+
+.priority-strip {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;
+}
+.priority-btn {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid;
+  transition: all .15s;
+  background: none;
+  font-family: 'Inter', sans-serif;
+}
+.priority-btn[data-p="low"] { border-color: #3b82f6; color: #3b82f6; }
+.priority-btn[data-p="medium"] { border-color: var(--gold); color: var(--gold); }
+.priority-btn[data-p="high"] { border-color: var(--red-500); color: var(--red-500); }
+.priority-btn.selected[data-p="low"] { background: #3b82f6; color: #fff; }
+.priority-btn.selected[data-p="medium"] { background: var(--gold); color: #fff; }
+.priority-btn.selected[data-p="high"] { background: var(--red-500); color: #fff; }
+
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--green-700), var(--green-500));
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: transform .15s, box-shadow .15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  letter-spacing: .3px;
+}
+.submit-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(5,150,105,.35); }
+
+/* ─── MEMO PAGE ──────────────────────────────────────── */
+#memoPrint {
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius);
+  padding: 32px;
+  font-family: 'Times New Roman', serif;
+}
+.memo-hospital-header {
+  text-align: center;
+  border-bottom: 3px double var(--green-700);
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+.memo-hospital-header .mh-logo {
+  width: 65px; height: 65px;
+  border-radius: 50%;
+  background: var(--green-50);
+  border: 3px solid var(--green-700);
+  margin: 0 auto 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.memo-hospital-header .mh-logo svg { width: 40px; height: 40px; }
+.memo-hospital-header h2 {
+  font-family: 'Merriweather', serif;
+  font-size: 1.1rem;
+  color: var(--green-900);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.memo-hospital-header p { font-size: .8rem; color: var(--gray-600); margin-top: 2px; }
+
+.memo-title-bar {
+  text-align: center;
+  background: var(--green-900);
+  color: var(--white);
+  padding: 8px 0;
+  font-size: .9rem;
+  font-weight: bold;
+  letter-spacing: 3px;
+  margin-bottom: 18px;
+  font-family: 'Inter', sans-serif;
+}
+
+.memo-routing { margin-bottom: 14px; }
+.memo-routing table { width: 100%; border-collapse: collapse; }
+.memo-routing td {
+  padding: 5px 8px;
+  font-size: .92rem;
+  border-bottom: 1px dotted var(--gray-300);
+}
+.memo-routing td:first-child { font-weight: bold; width: 110px; color: var(--green-800); }
+
+.memo-body-area {
+  min-height: 140px;
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 18px;
+  font-size: .9rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.sig-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 24px; margin-top: 20px;
+}
+.sig-box {
+  border-top: 1.5px solid var(--gray-400);
+  padding-top: 10px;
+}
+.sig-box .sig-label {
+  font-size: .75rem;
+  font-weight: bold;
+  color: var(--green-800);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 6px;
+}
+.sig-box input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px dotted var(--gray-400);
+  font-size: .88rem;
+  padding: 3px 0 6px;
+  margin-bottom: 4px;
+  font-family: 'Times New Roman', serif;
+  color: var(--gray-900);
+  background: transparent;
+}
+.sig-box input:focus { outline: none; border-bottom-color: var(--green-500); }
+
+.memo-actions {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px;
+}
+.btn-secondary {
+  padding: 9px 16px;
+  border: 1.5px solid var(--green-600);
+  color: var(--green-700);
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  font-size: .875rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all .15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-secondary:hover { background: var(--green-50); }
+
+/* ─── DASHBOARD ──────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+}
+.stat-card .stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+.stat-card .stat-val {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--green-700);
+  line-height: 1;
+}
+.stat-card .stat-lbl {
+  font-size: .78rem;
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+
+.date-filter-bar {
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+}
+.date-filter-bar label { font-size: .82rem; font-weight: 600; color: var(--green-800); }
+.date-filter-bar select, .date-filter-bar input[type="date"] {
+  padding: 7px 10px;
+  border: 1.5px solid var(--green-300);
+  border-radius: var(--radius-sm);
+  font-size: .85rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--gray-900);
+  background: var(--white);
+}
+.btn-filter {
+  padding: 7px 14px;
+  background: var(--green-700);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+.btn-export {
+  padding: 7px 14px;
+  background: var(--gold);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; gap: 5px;
+}
+
+.chart-bar-wrap { margin-bottom: 10px; }
+.chart-bar-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+.chart-bar-label { width: 130px; font-size: .8rem; color: var(--gray-700); flex-shrink: 0; text-align: right; }
+.chart-bar-track { flex: 1; background: var(--gray-100); border-radius: 4px; height: 20px; overflow: hidden; }
+.chart-bar-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--green-700), var(--green-500));
+  transition: width .6s ease;
+  display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;
+}
+.chart-bar-fill span { font-size: .72rem; font-weight: 700; color: var(--white); }
+
+/* TABLE */
+.data-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.data-table th {
+  background: var(--green-50);
+  color: var(--green-900);
+  font-weight: 700;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--green-200);
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--gray-100); }
+.data-table tr:hover td { background: var(--green-50); }
+.table-wrap { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--gray-200); }
+
+/* STATUS BADGES */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: .75rem;
+  font-weight: 600;
+}
+.badge-pending { background: #fef3c7; color: #92400e; }
+.badge-progress { background: #dbeafe; color: #1e40af; }
+.badge-done { background: var(--green-100); color: var(--green-800); }
+.badge-high { background: var(--red-100); color: #991b1b; }
+.badge-medium { background: #fef3c7; color: #92400e; }
+.badge-low { background: #dbeafe; color: #1e40af; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--green-800);
+  color: var(--white);
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  font-size: .9rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  z-index: 9999;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all .3s;
+  display: flex; align-items: center; gap: 8px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.error { background: var(--red-500); }
+
+/* PAGE HERO */
+.page-hero {
+  background: linear-gradient(135deg, var(--green-900), var(--green-700));
+  color: var(--white);
+  padding: 22px 20px;
+  display: flex; align-items: center; gap: 16px;
+}
+.page-hero-icon {
+  width: 50px; height: 50px;
+  background: rgba(255,255,255,.15);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+.page-hero-text h2 { font-size: 1.1rem; font-weight: 700; }
+.page-hero-text p { font-size: .83rem; color: var(--green-100); margin-top: 2px; }
+
+/* ─── UTILITIES ──────────────────────────────────────── */
+.mt-16 { margin-top: 16px; }
+.mb-16 { margin-bottom: 16px; }
+.text-sm { font-size: .85rem; }
+.text-muted { color: var(--gray-500); }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.gap-8 { gap: 8px; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--gray-500); }
+.empty-state svg { width: 48px; height: 48px; margin: 0 auto 12px; opacity: .3; display: block; }
+
+@media print {
+  body * { visibility: hidden; }
+  #memoPrint, #memoPrint * { visibility: visible; }
+  #memoPrint { position: fixed; inset: 0; width: 100%; }
+  .memo-actions { display: none !important; }
+}
+
+@media (max-width: 480px) {
+  .topbar-title span { display: none; }
+  .page-content { padding: 16px 14px; }
+  .card { padding: 16px; }
+  #memoPrint { padding: 16px; }
+  .sig-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     LOGIN PAGE
+════════════════════════════════════════════════════ -->
+<div id="loginPage">
+  <div class="login-header">
+    <div class="hospital-logo">
+      <!-- Hospital Cross + Building SVG Logo -->
+      <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="28" width="40" height="22" rx="2" fill="#065f46"/>
+        <rect x="18" y="20" width="24" height="10" rx="1" fill="#047857"/>
+        <rect x="24" y="12" width="12" height="8" rx="1" fill="#059669"/>
+        <rect x="26" y="32" width="8" height="10" rx="1" fill="white"/>
+        <rect x="14" y="33" width="7" height="6" rx="1" fill="white" opacity=".8"/>
+        <rect x="39" y="33" width="7" height="6" rx="1" fill="white" opacity=".8"/>
+        <!-- Cross -->
+        <rect x="28" y="4" width="4" height="12" rx="1" fill="#f59e0b"/>
+        <rect x="24" y="8" width="12" height="4" rx="1" fill="#f59e0b"/>
+      </svg>
+    </div>
+    <h1>Tema Urban Hospital</h1>
+    <p>Greater Accra Region, Ghana</p>
+    <div class="maintenance-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      Maintenance Fault Reporting System
+    </div>
+  </div>
+
+  <div class="login-card">
+    <h2>Sign In to Your Account</h2>
+    <p class="sub">Select your unit and enter your credentials</p>
+
+    <div class="form-group">
+      <label>Your Unit / Department</label>
+      <div class="select-wrap">
+        <select id="loginUnit">
+          <option value="">— Select Unit —</option>
+          <option>Medical Sup</option>
+          <option>Deputy Chief M. O</option>
+          <option>HASS</option>
+          <option>Head of Finance</option>
+          <option>Head of Pharmacy</option>
+          <option>Head of Nursing Services</option>
+          <option>Auditor</option>
+          <option>General Administration</option>
+          <option>Laboratory</option>
+          <option>Maternity Theatre</option>
+          <option>Anaesthesia</option>
+          <option>ART/STI</option>
+          <option>Dental</option>
+          <option>Dressing Unit</option>
+          <option>ENT</option>
+          <option>Family Planning</option>
+          <option>Halcrow Public Health</option>
+          <option>Eye</option>
+          <option>Health Information Unit</option>
+          <option>Chest Unit</option>
+          <option>Maintenance</option>
+          <option>Maternity Labour Ward</option>
+          <option>Maternity Antenatal</option>
+          <option>Nutrition Unit</option>
+          <option>Psychiatry Unit</option>
+          <option>Recovery Ward</option>
+          <option>Herbal</option>
+          <option>Adolescent Unit</option>
+          <option>Ultrasound Scan</option>
+          <option>Dietician</option>
+          <option>Inservice Unit</option>
+          <option>OPD Unit</option>
+          <option>Quality Assurance</option>
+          <option>ECG</option>
+          <option>Wellness Clinic</option>
+          <option>Head of IT</option>
+          <option>Head of Claims Office</option>
+          <option>Accounts</option>
+          <option>Procurement</option>
+          <option>Stores</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="Enter password" autocomplete="current-password">
+    </div>
+
+    <button class="btn-primary" onclick="doLogin()">
+      🔐 Sign In
+    </button>
+
+    <p style="font-size:.78rem;color:var(--gray-500);margin-top:14px;text-align:center;">
+      Admin login: unit = <strong>Maintenance</strong>, password = <strong>admin2024</strong><br>
+      Staff default password: <strong>tema2024</strong>
+    </p>
+  </div>
+
+  <div class="login-footer">© 2024 Tema Urban Hospital · Maintenance Department</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════════════ -->
+<div id="appPage">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="28" width="40" height="22" rx="2" fill="#065f46"/>
+          <rect x="18" y="20" width="24" height="10" rx="1" fill="#047857"/>
+          <rect x="26" y="32" width="8" height="10" rx="1" fill="white"/>
+          <rect x="28" y="4" width="4" height="12" rx="1" fill="#f59e0b"/>
+          <rect x="24" y="8" width="12" height="4" rx="1" fill="#f59e0b"/>
+        </svg>
+      </div>
+      <div class="topbar-title">
+        Tema Urban Hospital
+        <span>Maintenance System</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-chip">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span id="currentUnitDisplay">—</span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- NAV TABS -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('report')" id="tab-report">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      Report Fault
+    </button>
+    <button class="nav-tab" onclick="switchTab('memo')" id="tab-memo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Memo Pad
+    </button>
+    <button class="nav-tab" onclick="switchTab('history')" id="tab-history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      My Reports
+    </button>
+    <button class="nav-tab admin-only" onclick="switchTab('dashboard')" id="tab-dashboard" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-tab admin-only" onclick="switchTab('allreports')" id="tab-allreports" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      All Reports
+    </button>
+  </div>
+
+  <!-- ── REPORT FAULT PAGE ── -->
+  <div id="page-report" class="page-content active">
+    <div class="page-hero">
+      <div class="page-hero-icon">🔧</div>
+      <div class="page-hero-text">
+        <h2>Submit a Fault Report</h2>
+        <p>Report maintenance issues in your unit for prompt attention</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="section-label">Report Details</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Reporting Unit</label>
+          <input type="text" id="rptUnit" readonly style="background:var(--gray-50)">
+        </div>
+        <div class="form-group">
+          <label>Date of Report</label>
+          <input type="date" id="rptDate">
+        </div>
+        <div class="form-group">
+          <label>Reporter's Name</label>
+          <input type="text" id="rptName" placeholder="Full name">
+        </div>
+        <div class="form-group">
+          <label>Contact / Phone</label>
+          <input type="tel" id="rptPhone" placeholder="0XX XXX XXXX">
+        </div>
+      </div>
+
+      <div class="section-label">🔴 Priority Level</div>
+      <div class="priority-strip">
+        <button class="priority-btn" data-p="low" onclick="setPriority(this)">🔵 Low</button>
+        <button class="priority-btn" data-p="medium" onclick="setPriority(this)">🟡 Medium</button>
+        <button class="priority-btn" data-p="high" onclick="setPriority(this)">🔴 High / Urgent</button>
+      </div>
+
+      <div class="section-label" style="margin-top:20px">⚡ Select Fault Category &amp; Items</div>
+
+      <!-- Electricals -->
+      <div class="fault-category" id="cat-electrical">
+        <div class="cat-header">
+          <div class="cat-icon" style="background:#fef3c7;">⚡</div>
+          <div>
+            <div class="cat-title">Electrical Works</div>
+            <div class="cat-subtitle">Wiring, sockets, lamps, fridges</div>
+          </div>
+        </div>
+        <div class="select-wrap">
+          <select id="sel-electrical" onchange="catChanged('electrical')">
+            <option value="">— Select fault —</option>
+            <option>Fridge Repairs</option>
+            <option>Socket / Outlet</option>
+            <option>Lamp Holder</option>
+            <option>Cable / Wiring</option>
+            <option>Extension Board</option>
+            <option value="__other__">Other (specify below)</option>
+          </select>
+        </div>
+        <textarea id="txt-electrical" placeholder="Describe the electrical fault in detail…" style="margin-top:8px;display:none"></textarea>
+      </div>
+
+      <!-- Plumbing -->
+      <div class="fault-category" id="cat-plumbing">
+        <div class="cat-header">
+          <div class="cat-icon" style="background:#dbeafe;">🚿</div>
+          <div>
+            <div class="cat-title">Plumbing Works</div>
+            <div class="cat-subtitle">Pipes, taps, leakages</div>
+          </div>
+        </div>
+        <div class="select-wrap">
+          <select id="sel-plumbing" onchange="catChanged('plumbing')">
+            <option value="">— Select fault —</option>
+            <option>Leakages / Burst Pipe</option>
+            <option>Broken Taps / Faucet</option>
+            <option>Blocked Drain</option>
+            <option value="__other__">Other (specify below)</option>
+          </select>
+        </div>
+        <textarea id="txt-plumbing" placeholder="Describe the plumbing fault…" style="margin-top:8px;display:none"></textarea>
+      </div>
+
+      <!-- AC -->
+      <div class="fault-category" id="cat-ac">
+        <div class="cat-header">
+          <div class="cat-icon" style="background:#e0e7ff;">❄️</div>
+          <div>
+            <div class="cat-title">Air Conditioning (A/C)</div>
+            <div class="cat-subtitle">Cooling, leakages, switches</div>
+          </div>
+        </div>
+        <div class="select-wrap">
+          <select id="sel-ac" onchange="catChanged('ac')">
+            <option value="">— Select fault —</option>
+            <option>A/C Leakages</option>
+            <option>Not Chilling / Poor Cooling</option>
+            <option>A/C Switch / Remote</option>
+            <option>Noisy Unit</option>
+            <option value="__other__">Other (specify below)</option>
+          </select>
+        </div>
+        <textarea id="txt-ac" placeholder="Describe the A/C fault…" style="margin-top:8px;display:none"></textarea>
+      </div>
+
+      <!-- Carpentry -->
+      <div class="fault-category" id="cat-carpentry">
+        <div class="cat-header">
+          <div class="cat-icon" style="background:#fce7f3;">🪚</div>
+          <div>
+            <div class="cat-title">Carpentry Works</div>
+            <div class="cat-subtitle">Doors, windows, louvres</div>
+          </div>
+        </div>
+        <div class="select-wrap">
+          <select id="sel-carpentry" onchange="catChanged('carpentry')">
+            <option value="">— Select fault —</option>
+            <option>Door Locks / Handles</option>
+            <option>Louvre Blades</option>
+            <option>Louvre Frames</option>
+            <option>Broken Door</option>
+            <option value="__other__">Other (specify below)</option>
+          </select>
+        </div>
+        <textarea id="txt-carpentry" placeholder="Describe the carpentry fault…" style="margin-top:8px;display:none"></textarea>
+      </div>
+
+      <!-- Glazing -->
+      <div class="fault-category" id="cat-glazing">
+        <div class="cat-header">
+          <div class="cat-icon" style="background:#ecfdf5;">🪟</div>
+          <div>
+            <div class="cat-title">Glazing Works</div>
+            <div class="cat-subtitle">Glass, frames, hinges</div>
+          </div>
+        </div>
+        <div class="select-wrap">
+          <select id="sel-glazing" onchange="catChanged('glazing')">
+            <option value="">— Select fault —</option>
+            <option>Window / Door Handles</option>
+            <option>Glass Breakage</option>
+            <option>Hinges / Screws</option>
+            <option>Window Frame</option>
+            <option value="__other__">Other (specify below)</option>
+          </select>
+        </div>
+        <textarea id="txt-glazing" placeholder="Describe the glazing fault…" style="margin-top:8px;display:none"></textarea>
+      </div>
+
+      <!-- Renovation -->
+      <div class="fault-category" id="cat-renovation">
+        <div class="cat-header">
+          <div class="cat-icon" style="background:#fff7ed;">🏗️</div>
+          <div>
+            <div class="cat-title">Renovation Works</div>
+            <div class="cat-subtitle">Walls, floors, ceilings, painting</div>
+          </div>
+        </div>
+        <div class="select-wrap">
+          <select id="sel-renovation" onchange="catChanged('renovation')">
+            <option value="">— Select fault —</option>
+            <option value="__other__">Describe renovation needed →</option>
+          </select>
+        </div>
+        <textarea id="txt-renovation" placeholder="Describe the renovation work required in detail…" style="margin-top:8px;display:block"></textarea>
+      </div>
+
+      <div class="section-label">Additional Notes</div>
+      <div class="form-group">
+        <textarea id="rptNotes" placeholder="Any other details the maintenance team should know…" style="min-height:80px"></textarea>
+      </div>
+
+      <button class="submit-btn" onclick="submitReport()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Submit Fault Report
+      </button>
+    </div>
+  </div>
+
+  <!-- ── MEMO PAD PAGE ── -->
+  <div id="page-memo" class="page-content">
+    <div class="page-hero">
+      <div class="page-hero-icon">📄</div>
+      <div class="page-hero-text">
+        <h2>Official Memo Generator</h2>
+        <p>Create formal maintenance request memos for approval</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="section-label">Memo Details</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>FROM Unit</label>
+          <input type="text" id="memoFrom" placeholder="Unit sending memo">
+        </div>
+        <div class="form-group">
+          <label>TO Unit</label>
+          <input type="text" id="memoTo" value="Maintenance Unit" placeholder="Recipient unit">
+        </div>
+        <div class="form-group">
+          <label>Memo Date</label>
+          <input type="date" id="memoDate">
+        </div>
+        <div class="form-group">
+          <label>Reference No.</label>
+          <input type="text" id="memoRef" placeholder="e.g. TUH/MAINT/2024/001">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Subject / Title of Memo</label>
+        <input type="text" id="memoSubject" placeholder="e.g. Request for Electrical Repairs in Laboratory">
+      </div>
+
+      <div class="section-label">Memo Body</div>
+      <div class="form-group">
+        <textarea id="memoBody" style="min-height:160px" placeholder="Write the body of the memo here…&#10;&#10;State the nature of the fault, urgency, and any background information…"></textarea>
+      </div>
+
+      <button class="btn-primary" onclick="generateMemo()" style="margin-bottom:16px">
+        📝 Generate Memo Preview
+      </button>
+    </div>
+
+    <!-- PRINTABLE MEMO -->
+    <div id="memoPrint" style="display:none">
+      <div class="memo-hospital-header">
+        <div class="mh-logo">
+          <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="28" width="40" height="22" rx="2" fill="#065f46"/>
+            <rect x="18" y="20" width="24" height="10" rx="1" fill="#047857"/>
+            <rect x="26" y="32" width="8" height="10" rx="1" fill="white"/>
+            <rect x="28" y="4" width="4" height="12" rx="1" fill="#f59e0b"/>
+            <rect x="24" y="8" width="12" height="4" rx="1" fill="#f59e0b"/>
+          </svg>
+        </div>
+        <h2>Tema Urban Hospital</h2>
+        <p>P.O. Box CO 2380, Tema, Greater Accra — Ghana Health Service</p>
+      </div>
+
+      <div class="memo-title-bar">INTER-DEPARTMENTAL MEMORANDUM</div>
+
+      <div class="memo-routing">
+        <table>
+          <tr><td>DATE:</td><td id="pMemoDate">—</td></tr>
+          <tr><td>REF:</td><td id="pMemoRef">—</td></tr>
+          <tr><td>FROM:</td><td id="pMemoFrom">—</td></tr>
+          <tr><td>TO:</td><td id="pMemoTo">—</td></tr>
+          <tr><td>SUBJECT:</td><td id="pMemoSubject" style="font-weight:bold;text-transform:uppercase">—</td></tr>
+        </table>
+      </div>
+
+      <div class="memo-body-area" id="pMemoBody">—</div>
+
+      <div class="sig-row">
+        <div class="sig-box">
+          <div class="sig-label">Requested by (Staff):</div>
+          <input type="text" placeholder="Full Name" id="sigReqName">
+          <input type="text" placeholder="Designation / Role" id="sigReqRole">
+          <input type="tel" placeholder="Phone Number" id="sigReqPhone">
+          <div style="margin-top:12px;border-top:1px solid #999;padding-top:4px;font-size:.78rem;color:#666;">Signature &amp; Date</div>
+        </div>
+        <div class="sig-box">
+          <div class="sig-label">Approved by (Head of Unit):</div>
+          <input type="text" placeholder="Full Name" id="sigAppName">
+          <input type="text" placeholder="Designation / Role" id="sigAppRole">
+          <input type="tel" placeholder="Phone Number" id="sigAppPhone">
+          <div style="margin-top:12px;border-top:1px solid #999;padding-top:4px;font-size:.78rem;color:#666;">Signature &amp; Date</div>
+        </div>
+      </div>
+
+      <div class="memo-actions">
+        <button class="btn-secondary" onclick="window.print()">
+          🖨️ Print Memo
+        </button>
+        <button class="btn-secondary" onclick="document.getElementById('memoPrint').style.display='none'">
+          ✕ Close Preview
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MY REPORTS PAGE ── -->
+  <div id="page-history" class="page-content">
+    <div class="page-hero">
+      <div class="page-hero-icon">📋</div>
+      <div class="page-hero-text">
+        <h2>My Submitted Reports</h2>
+        <p>Track the status of your fault reports</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <div id="historyContent">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <p>No reports submitted yet. Use the <strong>Report Fault</strong> tab to submit your first report.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ADMIN DASHBOARD ── -->
+  <div id="page-dashboard" class="page-content">
+    <div class="page-hero">
+      <div class="page-hero-icon">📊</div>
+      <div class="page-hero-text">
+        <h2>Admin Dashboard</h2>
+        <p>Live summary of all maintenance requests</p>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <div class="date-filter-bar">
+        <label>📅 Period:</label>
+        <select id="dashPeriod" onchange="renderDashboard()">
+          <option value="month">This Month</option>
+          <option value="half">Half Year (6 months)</option>
+          <option value="year">This Year</option>
+          <option value="custom">Custom Range</option>
+        </select>
+        <span id="customRange" style="display:none;gap:6px;align-items:center;display:none">
+          <input type="date" id="dashFrom" onchange="renderDashboard()">
+          <span style="font-size:.8rem">to</span>
+          <input type="date" id="dashTo" onchange="renderDashboard()">
+        </span>
+        <button class="btn-filter" onclick="renderDashboard()">🔄 Refresh</button>
+        <button class="btn-export" onclick="exportToExcel()">📥 Export Excel</button>
+      </div>
+
+      <div class="stats-grid" id="dashStats">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></div>
+            Faults by Category
+          </div>
+        </div>
+        <div id="catChart" class="chart-bar-wrap"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            Reports by Unit
+          </div>
+        </div>
+        <div id="unitChart" class="chart-bar-wrap"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="icon-wrap">🏆</div>
+            Top Procurement Priorities
+          </div>
+          <span style="font-size:.78rem;color:var(--gray-500)">Most requested items</span>
+        </div>
+        <div id="topItems"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ALL REPORTS TABLE ── -->
+  <div id="page-allreports" class="page-content">
+    <div class="page-hero">
+      <div class="page-hero-icon">🗃️</div>
+      <div class="page-hero-text">
+        <h2>All Fault Reports</h2>
+        <p>Complete record of all submitted reports hospital-wide</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="date-filter-bar" style="margin-bottom:16px">
+        <label>Filter:</label>
+        <input type="text" id="searchReports" placeholder="Unit, category…" oninput="renderAllReports()" style="padding:7px 10px;border:1.5px solid var(--green-300);border-radius:var(--radius-sm);font-size:.85rem;font-family:'Inter',sans-serif;">
+        <select id="filterStatus" onchange="renderAllReports()" style="padding:7px 10px;border:1.5px solid var(--green-300);border-radius:var(--radius-sm);font-size:.85rem;font-family:'Inter',sans-serif;">
+          <option value="">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+        <button class="btn-export" onclick="exportToExcel()">📥 Export Excel</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Unit</th>
+              <th>Category</th>
+              <th>Fault / Item</th>
+              <th>Reporter</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="allReportsBody"></tbody>
+        </table>
+      </div>
+      <div id="noReportsMsg" class="empty-state" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+        <p>No reports found for current filters.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     FIREBASE + APP LOGIC
+════════════════════════════════════════════════════ -->
+<script type="module">
+// ── Firebase ──────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ✅ REPLACE with your Firebase project config
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+let db;
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  console.log("Firebase connected ✓");
+} catch(e) {
+  console.warn("Firebase not configured — using localStorage fallback");
+}
+
+// ── State ─────────────────────────────────────────────
+let currentUser = null;
+let isAdmin = false;
+let allReports = [];
+
+const ADMIN_UNIT = "Maintenance";
+const ADMIN_PASS = "admin2024";
+const STAFF_PASS = "tema2024";
+
+// ── Login ─────────────────────────────────────────────
+window.doLogin = function() {
+  const unit = document.getElementById('loginUnit').value;
+  const pass = document.getElementById('loginPassword').value;
+  if (!unit) { showToast("Please select your unit", true); return; }
+  if (!pass)  { showToast("Please enter your password", true); return; }
+
+  const validAdmin  = unit === ADMIN_UNIT && pass === ADMIN_PASS;
+  const validStaff  = pass === STAFF_PASS;
+
+  if (!validAdmin && !validStaff) { showToast("Incorrect password. Try again.", true); return; }
+
+  currentUser = unit;
+  isAdmin = validAdmin;
+
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('appPage').style.display   = 'block';
+  document.getElementById('currentUnitDisplay').textContent = unit;
+  document.getElementById('rptUnit').value  = unit;
+  document.getElementById('memoFrom').value = unit;
+
+  // Set today's date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('rptDate').value  = today;
+  document.getElementById('memoDate').value = today;
+
+  // Show admin tabs
+  if (isAdmin) {
+    document.getElementById('tab-dashboard').style.display  = 'flex';
+    document.getElementById('tab-allreports').style.display = 'flex';
+    loadAllReports();
+  }
+  loadMyReports();
+};
+
+window.doLogout = function() {
+  currentUser = null; isAdmin = false; allReports = [];
+  document.getElementById('appPage').style.display   = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('loginPage').style.flexDirection = 'column';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginUnit').value = '';
+};
+
+// ── Tab switching ──────────────────────────────────────
+window.switchTab = function(name) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('page-' + name).classList.add('active');
+  if (name === 'dashboard')  renderDashboard();
+  if (name === 'allreports') renderAllReports();
+  if (name === 'history')    loadMyReports();
+};
+
+// ── Priority ───────────────────────────────────────────
+let selectedPriority = '';
+window.setPriority = function(btn) {
+  document.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedPriority = btn.dataset.p;
+};
+
+// ── Category changed ───────────────────────────────────
+window.catChanged = function(cat) {
+  const sel = document.getElementById('sel-' + cat);
+  const txt = document.getElementById('txt-' + cat);
+  const box = document.getElementById('cat-' + cat);
+  txt.style.display = sel.value === '__other__' ? 'block' : 'none';
+  box.classList.toggle('has-selection', sel.value !== '');
+};
+
+// ── Submit Report ──────────────────────────────────────
+window.submitReport = async function() {
+  const cats = ['electrical','plumbing','ac','carpentry','glazing','renovation'];
+  const faults = [];
+  for (const c of cats) {
+    const v = document.getElementById('sel-' + c).value;
+    const t = document.getElementById('txt-' + c).value.trim();
+    if (v && v !== '__other__') faults.push({ category: c, item: v });
+    else if (v === '__other__' && t) faults.push({ category: c, item: t });
+    else if (c === 'renovation' && t) faults.push({ category: 'renovation', item: t });
+  }
+
+  if (!faults.length) { showToast("Please select at least one fault category", true); return; }
+  const name = document.getElementById('rptName').value.trim();
+  const phone = document.getElementById('rptPhone').value.trim();
+  if (!name) { showToast("Please enter your name", true); return; }
+
+  const report = {
+    unit:      currentUser,
+    date:      document.getElementById('rptDate').value,
+    reporter:  name,
+    phone:     phone,
+    priority:  selectedPriority || 'medium',
+    faults:    faults,
+    notes:     document.getElementById('rptNotes').value.trim(),
+    status:    'Pending',
+    createdAt: new Date().toISOString()
+  };
+
+  try {
+    if (db) {
+      await addDoc(collection(db, 'reports'), { ...report, createdAt: serverTimestamp() });
+    } else {
+      const stored = JSON.parse(localStorage.getItem('tuh_reports') || '[]');
+      report.id = 'local_' + Date.now();
+      stored.push(report);
+      localStorage.setItem('tuh_reports', JSON.stringify(stored));
+    }
+    showToast("✅ Fault report submitted successfully!");
+    resetForm();
+    loadMyReports();
+    if (isAdmin) loadAllReports();
+  } catch(e) {
+    showToast("Error submitting report: " + e.message, true);
+  }
+};
+
+function resetForm() {
+  ['electrical','plumbing','ac','carpentry','glazing','renovation'].forEach(c => {
+    document.getElementById('sel-' + c).value = '';
+    document.getElementById('txt-' + c).value = '';
+    document.getElementById('txt-' + c).style.display = 'none';
+    document.getElementById('cat-' + c).classList.remove('has-selection');
+  });
+  document.getElementById('rptName').value = '';
+  document.getElementById('rptPhone').value = '';
+  document.getElementById('rptNotes').value = '';
+  document.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('selected'));
+  selectedPriority = '';
+}
+
+// ── Load Reports ───────────────────────────────────────
+async function loadAllReports() {
+  try {
+    if (db) {
+      const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      allReports = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } else {
+      allReports = JSON.parse(localStorage.getItem('tuh_reports') || '[]').reverse();
+    }
+  } catch(e) {
+    allReports = JSON.parse(localStorage.getItem('tuh_reports') || '[]').reverse();
+  }
+  renderAllReports();
+  renderDashboard();
+}
+
+function loadMyReports() {
+  const all = JSON.parse(localStorage.getItem('tuh_reports') || '[]');
+  const mine = all.filter(r => r.unit === currentUser).reverse();
+  const el = document.getElementById('historyContent');
+  if (!mine.length) {
+    el.innerHTML = '<div class="empty-state"><p>No reports yet for your unit.</p></div>'; return;
+  }
+  el.innerHTML = '<div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Category</th><th>Item</th><th>Priority</th><th>Status</th></tr></thead><tbody>' +
+    mine.map(r => r.faults.map(f =>
+      `<tr><td>${r.date||'—'}</td><td>${capFirst(f.category)}</td><td>${f.item}</td><td><span class="badge badge-${r.priority}">${capFirst(r.priority)}</span></td><td><span class="badge badge-pending">${r.status}</span></td></tr>`
+    ).join('')).join('') + '</tbody></table></div>';
+}
+
+// ── Render All Reports ──────────────────────────────────
+window.renderAllReports = function() {
+  const search = (document.getElementById('searchReports')?.value || '').toLowerCase();
+  const status = document.getElementById('filterStatus')?.value || '';
+  let filtered = allReports;
+  if (search) filtered = filtered.filter(r => (r.unit+' '+(r.faults||[]).map(f=>f.category+' '+f.item).join(' ')).toLowerCase().includes(search));
+  if (status) filtered = filtered.filter(r => r.status === status);
+
+  const tbody = document.getElementById('allReportsBody');
+  const noMsg = document.getElementById('noReportsMsg');
+  if (!filtered.length) { tbody.innerHTML=''; noMsg.style.display='block'; return; }
+  noMsg.style.display = 'none';
+
+  let rows = '';
+  filtered.forEach((r, i) => {
+    (r.faults||[]).forEach(f => {
+      rows += `<tr>
+        <td>${i+1}</td>
+        <td>${r.date||'—'}</td>
+        <td>${r.unit||'—'}</td>
+        <td>${capFirst(f.category)}</td>
+        <td>${f.item}</td>
+        <td>${r.reporter||'—'}</td>
+        <td><span class="badge badge-${r.priority||'medium'}">${capFirst(r.priority||'medium')}</span></td>
+        <td><span class="badge badge-${statusClass(r.status)}">${r.status||'Pending'}</span></td>
+        <td><select onchange="updateStatus('${r.id}',this.value)" style="font-size:.78rem;padding:3px 6px;border:1px solid var(--gray-300);border-radius:4px;font-family:'Inter',sans-serif;">
+          <option ${r.status==='Pending'?'selected':''}>Pending</option>
+          <option ${r.status==='In Progress'?'selected':''}>In Progress</option>
+          <option ${r.status==='Resolved'?'selected':''}>Resolved</option>
+        </select></td>
+      </tr>`;
+    });
+  });
+  tbody.innerHTML = rows;
+};
+
+window.updateStatus = async function(id, status) {
+  const stored = JSON.parse(localStorage.getItem('tuh_reports') || '[]');
+  const idx = stored.findIndex(r => r.id === id);
+  if (idx >= 0) { stored[idx].status = status; localStorage.setItem('tuh_reports', JSON.stringify(stored)); }
+  if (db && id && !id.startsWith('local_')) {
+    try { await updateDoc(doc(db, 'reports', id), { status }); } catch(e) {}
+  }
+  const r = allReports.find(r => r.id === id);
+  if (r) r.status = status;
+  renderDashboard();
+  showToast("Status updated to: " + status);
+};
+
+// ── Dashboard ──────────────────────────────────────────
+window.renderDashboard = function() {
+  const period = document.getElementById('dashPeriod')?.value || 'month';
+  const cRange = document.getElementById('customRange');
+  if (cRange) cRange.style.display = period === 'custom' ? 'flex' : 'none';
+
+  const now = new Date();
+  let from = new Date();
+  if (period === 'month') { from = new Date(now.getFullYear(), now.getMonth(), 1); }
+  else if (period === 'half') { from = new Date(now.getFullYear(), now.getMonth()-5, 1); }
+  else if (period === 'year') { from = new Date(now.getFullYear(), 0, 1); }
+  else if (period === 'custom') {
+    from = new Date(document.getElementById('dashFrom')?.value || from);
+  }
+
+  const toDate = period === 'custom' ? new Date(document.getElementById('dashTo')?.value || now) : now;
+
+  const inRange = allReports.filter(r => {
+    const d = new Date(r.date || r.createdAt);
+    return d >= from && d <= toDate;
+  });
+
+  // Stats
+  const total = inRange.length > 0 ? inRange.reduce((s,r) => s + (r.faults||[]).length, 0) : 0;
+  const pending  = inRange.filter(r => r.status === 'Pending').length;
+  const progress = inRange.filter(r => r.status === 'In Progress').length;
+  const resolved = inRange.filter(r => r.status === 'Resolved').length;
+  const urgent   = inRange.filter(r => r.priority === 'high').length;
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-val">${total}</div><div class="stat-lbl">Total Faults</div></div>
+    <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-val">${pending}</div><div class="stat-lbl">Pending</div></div>
+    <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-val">${progress}</div><div class="stat-lbl">In Progress</div></div>
+    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-val">${resolved}</div><div class="stat-lbl">Resolved</div></div>
+    <div class="stat-card"><div class="stat-icon">🔴</div><div class="stat-val">${urgent}</div><div class="stat-lbl">Urgent</div></div>
+  `;
+
+  // Category chart
+  const catCount = {};
+  inRange.forEach(r => (r.faults||[]).forEach(f => { catCount[f.category] = (catCount[f.category]||0)+1; }));
+  const maxCat = Math.max(...Object.values(catCount), 1);
+  const catLabels = { electrical:'⚡ Electrical', plumbing:'🚿 Plumbing', ac:'❄️ A/C', carpentry:'🪚 Carpentry', glazing:'🪟 Glazing', renovation:'🏗️ Renovation' };
+  document.getElementById('catChart').innerHTML = Object.entries(catLabels).map(([k,lbl]) => {
+    const v = catCount[k] || 0;
+    const pct = Math.round(v/maxCat*100);
+    return `<div class="chart-bar-row"><div class="chart-bar-label">${lbl}</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${pct}%"><span>${v}</span></div></div></div>`;
+  }).join('');
+
+  // Unit chart
+  const unitCount = {};
+  inRange.forEach(r => { unitCount[r.unit] = (unitCount[r.unit]||0)+(r.faults||[]).length; });
+  const topUnits = Object.entries(unitCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxUnit = Math.max(...topUnits.map(u=>u[1]), 1);
+  document.getElementById('unitChart').innerHTML = topUnits.map(([u,v]) => {
+    const pct = Math.round(v/maxUnit*100);
+    return `<div class="chart-bar-row"><div class="chart-bar-label">${u}</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${pct}%"><span>${v}</span></div></div></div>`;
+  }).join('') || '<p class="text-muted text-sm" style="padding:12px">No data for selected period.</p>';
+
+  // Top items
+  const itemCount = {};
+  inRange.forEach(r => (r.faults||[]).forEach(f => { const k=f.item; itemCount[k]=(itemCount[k]||0)+1; }));
+  const topItems = Object.entries(itemCount).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  document.getElementById('topItems').innerHTML = topItems.length ? topItems.map(([item,cnt],i) =>
+    `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
+      <span style="width:24px;height:24px;background:var(--green-50);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--green-800)">${i+1}</span>
+      <span style="flex:1;font-size:.88rem">${item}</span>
+      <span class="badge badge-done">${cnt} request${cnt>1?'s':''}</span>
+    </div>`
+  ).join('') : '<p class="text-muted text-sm" style="padding:12px">No data for selected period.</p>';
+};
+
+// ── Export Excel ────────────────────────────────────────
+window.exportToExcel = function() {
+  if (!allReports.length) { showToast("No data to export", true); return; }
+  const rows = [];
+  rows.push(['Date', 'Unit', 'Reporter', 'Phone', 'Category', 'Fault/Item', 'Priority', 'Status', 'Notes']);
+  allReports.forEach(r => {
+    (r.faults||[]).forEach(f => {
+      rows.push([r.date||'', r.unit||'', r.reporter||'', r.phone||'', capFirst(f.category), f.item, capFirst(r.priority||''), r.status||'', r.notes||'']);
+    });
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = rows[0].map((_,i) => ({ wch: [12,22,18,14,14,28,10,12,30][i]||14 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Fault Reports');
+
+  // Summary sheet
+  const catCount = {};
+  allReports.forEach(r => (r.faults||[]).forEach(f => { catCount[f.category]=(catCount[f.category]||0)+1; }));
+  const sumRows = [['Category','Count']].concat(Object.entries(catCount).map(([k,v])=>[capFirst(k),v]));
+  const ws2 = XLSX.utils.aoa_to_sheet(sumRows);
+  XLSX.utils.book_append_sheet(wb, ws2, 'Summary');
+
+  XLSX.writeFile(wb, `TUH_Maintenance_Reports_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast("📥 Excel file downloaded!");
+};
+
+// ── Memo ───────────────────────────────────────────────
+window.generateMemo = function() {
+  const fromV    = document.getElementById('memoFrom').value || currentUser;
+  const toV      = document.getElementById('memoTo').value;
+  const dateV    = document.getElementById('memoDate').value;
+  const refV     = document.getElementById('memoRef').value;
+  const subjectV = document.getElementById('memoSubject').value;
+  const bodyV    = document.getElementById('memoBody').value;
+
+  if (!subjectV || !bodyV) { showToast("Please fill in Subject and Memo body", true); return; }
+
+  document.getElementById('pMemoFrom').textContent    = fromV;
+  document.getElementById('pMemoTo').textContent      = toV;
+  document.getElementById('pMemoDate').textContent    = dateV ? new Date(dateV).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'}) : '—';
+  document.getElementById('pMemoRef').textContent     = refV || '—';
+  document.getElementById('pMemoSubject').textContent = subjectV.toUpperCase();
+  document.getElementById('pMemoBody').textContent    = bodyV;
+
+  document.getElementById('memoPrint').style.display = 'block';
+  document.getElementById('memoPrint').scrollIntoView({ behavior: 'smooth' });
+};
+
+// ── Helpers ────────────────────────────────────────────
+function capFirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+function statusClass(s) { return s==='Resolved'?'done':s==='In Progress'?'progress':'pending'; }
+
+window.showToast = function(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 3000);
+};
+
+// ── Init: set dates & pre-seed demo data ───────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('rptDate').value  = today;
+  document.getElementById('memoDate').value = today;
+
+  // Seed demo data if localStorage empty
+  if (!localStorage.getItem('tuh_reports')) {
+    const demo = [
+      { id:'d1', unit:'Laboratory', date:'2024-06-01', reporter:'Kwame Asante', phone:'0244123456', priority:'high', faults:[{category:'electrical',item:'Fridge Repairs'},{category:'electrical',item:'Socket / Outlet'}], status:'In Progress', notes:'Fridge storing samples has stopped cooling' },
+      { id:'d2', unit:'OPD Unit', date:'2024-06-03', reporter:'Ama Boateng', phone:'0200987654', priority:'medium', faults:[{category:'plumbing',item:'Broken Taps / Faucet'}], status:'Pending', notes:'Washroom tap broken' },
+      { id:'d3', unit:'Maternity Theatre', date:'2024-06-05', reporter:'Kofi Mensah', phone:'0277456789', priority:'high', faults:[{category:'ac',item:'Not Chilling / Poor Cooling'}], status:'Pending', notes:'Theatre AC not cooling' },
+      { id:'d4', unit:'Dental', date:'2024-06-07', reporter:'Abena Ofori', phone:'0244789012', priority:'low', faults:[{category:'carpentry',item:'Door Locks / Handles'}], status:'Resolved', notes:'Door lock replaced' },
+      { id:'d5', unit:'ENT', date:'2024-05-20', reporter:'Yaw Darko', phone:'0208765432', priority:'medium', faults:[{category:'glazing',item:'Glass Breakage'}], status:'In Progress', notes:'Window glass broken' },
+      { id:'d6', unit:'Accounts', date:'2024-05-15', reporter:'Akosua Frempong', phone:'0244345678', priority:'low', faults:[{category:'electrical',item:'Lamp Holder'}], status:'Resolved', notes:'Ceiling lamp holder replaced' },
+    ];
+    localStorage.setItem('tuh_reports', JSON.stringify(demo));
+  }
+});
+</script>
+</body>
+</html>
