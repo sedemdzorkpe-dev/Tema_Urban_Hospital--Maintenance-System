@@ -244,13 +244,13 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
 .memo-hospital-header .mh-logo svg { width: 40px; height: 40px; }
 .memo-hospital-header h2 { font-family: 'Merriweather', serif; font-size: 1.1rem; color: var(--green-900); text-transform: uppercase; letter-spacing: 1px; }
 .memo-hospital-header p { font-size: .8rem; color: var(--gray-600); margin-top: 2px; }
-.memo-title-bar { text-align: center; background: var(--green-900); color: var(--white); padding: 8px 0; font-size: .9rem; font-weight: bold; letter-spacing: 3px; margin-bottom: 18px; font-family: 'Inter', sans-serif; }
-.memo-routing { margin-bottom: 14px; }
+.memo-title-bar { text-align: center; background: var(--green-900); color: var(--white); padding: 7px 0; font-size: .88rem; font-weight: bold; letter-spacing: 3px; margin-bottom: 12px; font-family: 'Inter', sans-serif; }
+.memo-routing { margin-bottom: 10px; }
 .memo-routing table { width: 100%; border-collapse: collapse; }
-.memo-routing td { padding: 5px 8px; font-size: .92rem; border-bottom: 1px dotted var(--gray-300); }
+.memo-routing td { padding: 4px 8px; font-size: .9rem; border-bottom: 1px dotted var(--gray-300); }
 .memo-routing td:first-child { font-weight: bold; width: 110px; color: var(--green-800); }
-.memo-body-area { min-height: 140px; border: 1px solid var(--gray-300); border-radius: 4px; padding: 12px; margin-bottom: 18px; font-size: .9rem; line-height: 1.7; white-space: pre-wrap; }
-.sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 20px; }
+.memo-body-area { min-height: 80px; max-height: none; border: 1px solid var(--gray-300); border-radius: 4px; padding: 12px; margin-bottom: 14px; font-size: .9rem; line-height: 1.6; white-space: pre-wrap; overflow: visible; }
+.sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; }
 .sig-box { border-top: 1.5px solid var(--gray-400); padding-top: 10px; }
 .sig-box .sig-label { font-size: .75rem; font-weight: bold; color: var(--green-800); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
 .sig-box input { width: 100%; border: none; border-bottom: 1px dotted var(--gray-400); font-size: .88rem; padding: 3px 0 6px; margin-bottom: 4px; font-family: 'Times New Roman', serif; color: var(--gray-900); background: transparent; }
@@ -285,21 +285,41 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
 .loading { text-align:center; padding:30px; color:var(--gray-500); font-size:.9rem; }
 
 @media print {
-  @page { size: A5 landscape; margin: 6mm; }
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm;
+  }
   body * { visibility: hidden; }
   #memoPrint, #memoPrint * { visibility: visible; }
   #memoPrint {
-    position: fixed; inset: 0; width: 100%;
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 4mm;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    padding: 0;
+    font-size: 11pt;
+    line-height: 1.4;
   }
-  .memo-copy { page-break-inside: avoid; }
-  .memo-copy-divider { border-left: 1px dashed #999; }
   .memo-actions { display: none !important; }
-  .memo-print-label { display: block !important; }
+  /* Prevent body overflow onto second page */
+  .memo-body-area {
+    min-height: 0 !important;
+    max-height: none;
+    overflow: visible;
+    page-break-inside: avoid;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+  .memo-hospital-header { padding-bottom: 6pt; margin-bottom: 8pt; }
+  .memo-hospital-header .mh-logo { width: 50pt; height: 50pt; }
+  .memo-hospital-header h2 { font-size: 13pt; }
+  .memo-hospital-header p { font-size: 9pt; }
+  .memo-title-bar { padding: 5pt 0; font-size: 10pt; margin-bottom: 8pt; }
+  .memo-routing td { padding: 3pt 6pt; font-size: 10pt; }
+  .sig-row { margin-top: 12pt; gap: 16pt; }
+  .sig-box input { font-size: 10pt; padding: 2pt 0 4pt; }
+  .sig-box .sig-label { font-size: 8pt; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
-.memo-print-label { display: none; font-size: .7rem; text-align: center; color: #999; padding: 2px 0; font-style: italic; }
 @media (max-width: 480px) {
   .topbar-title span { display: none; }
   .page-content { padding: 16px 14px; }
@@ -515,84 +535,44 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
       <button class="btn-primary" onclick="generateMemo()" style="margin-bottom:16px">📝 Generate Memo Preview</button>
     </div>
     <div id="memoPrint" style="display:none">
-      <div style="display:flex;gap:16px;align-items:flex-start">
-        <!-- COPY 1 (Maintenance Office) -->
-      <div class="memo-copy" style="flex:1;min-width:0">
-        <div class="memo-hospital-header">
-          <div class="mh-logo"><svg viewBox="0 0 60 60" fill="none"><rect x="10" y="28" width="40" height="22" rx="2" fill="#065f46"/><rect x="18" y="20" width="24" height="10" rx="1" fill="#047857"/><rect x="26" y="32" width="8" height="10" rx="1" fill="white"/><rect x="28" y="4" width="4" height="12" rx="1" fill="#f59e0b"/><rect x="24" y="8" width="12" height="4" rx="1" fill="#f59e0b"/></svg></div>
-          <h2>Tema Urban Hospital</h2>
-          <p>P.O. Box CO 2380, Tema, Greater Accra — Ghana Health Service</p>
+      <div class="memo-hospital-header">
+        <div class="mh-logo">
+          <svg viewBox="0 0 60 60" fill="none"><rect x="10" y="28" width="40" height="22" rx="2" fill="#065f46"/><rect x="18" y="20" width="24" height="10" rx="1" fill="#047857"/><rect x="26" y="32" width="8" height="10" rx="1" fill="white"/><rect x="28" y="4" width="4" height="12" rx="1" fill="#f59e0b"/><rect x="24" y="8" width="12" height="4" rx="1" fill="#f59e0b"/></svg>
         </div>
-        <div class="memo-title-bar">INTER-DEPARTMENTAL MEMORANDUM</div>
-        <div class="memo-routing">
-          <table>
-            <tr><td>DATE:</td><td id="pMemoDate">—</td></tr>
-            <tr><td>REF:</td><td id="pMemoRef">—</td></tr>
-            <tr><td>FROM:</td><td id="pMemoFrom">—</td></tr>
-            <tr><td>TO:</td><td id="pMemoTo">—</td></tr>
-            <tr><td>SUBJECT:</td><td id="pMemoSubject" style="font-weight:bold;text-transform:uppercase">—</td></tr>
-          </table>
-        </div>
-        <div class="memo-body-area" id="pMemoBody">—</div>
-        <div class="sig-row">
-          <div class="sig-box">
-            <div class="sig-label">Requested by (Staff):</div>
-            <input type="text" placeholder="Full Name" id="sigReqName">
-            <input type="text" placeholder="Designation / Role" id="sigReqRole">
-            <input type="tel" placeholder="Phone Number" id="sigReqPhone">
-            <div style="margin-top:10px;border-top:1px solid #999;padding-top:3px;font-size:.72rem;color:#666;">Signature &amp; Date</div>
-          </div>
-          <div class="sig-box">
-            <div class="sig-label">Approved by (Head of Unit):</div>
-            <input type="text" placeholder="Full Name" id="sigAppName">
-            <input type="text" placeholder="Designation / Role" id="sigAppRole">
-            <input type="tel" placeholder="Phone Number" id="sigAppPhone">
-            <div style="margin-top:10px;border-top:1px solid #999;padding-top:3px;font-size:.72rem;color:#666;">Signature &amp; Date</div>
-          </div>
-        </div>
-        <div class="memo-print-label">MAINTENANCE OFFICE COPY</div>
+        <h2>Tema Urban Hospital</h2>
+        <p style="margin-top:3px;font-size:.78rem;color:#444">P.M.Bag Tema Community 2 &nbsp;|&nbsp; Tel: 0302944398 &nbsp;|&nbsp; GPS: GT-056-4041</p>
+        <p style="margin-top:2px;font-size:.75rem;color:#666;letter-spacing:.5px">GHANA HEALTH SERVICE</p>
       </div>
-        <div style="width:1px;background:repeating-linear-gradient(to bottom,#ccc 0,#ccc 6px,transparent 6px,transparent 12px);align-self:stretch;flex-shrink:0"></div>
-        <!-- COPY 2 (Requesting Unit) -->
-      <div class="memo-copy memo-copy-divider" style="flex:1;min-width:0;padding-left:8px">
-        <div class="memo-hospital-header">
-          <div class="mh-logo"><svg viewBox="0 0 60 60" fill="none"><rect x="10" y="28" width="40" height="22" rx="2" fill="#065f46"/><rect x="18" y="20" width="24" height="10" rx="1" fill="#047857"/><rect x="26" y="32" width="8" height="10" rx="1" fill="white"/><rect x="28" y="4" width="4" height="12" rx="1" fill="#f59e0b"/><rect x="24" y="8" width="12" height="4" rx="1" fill="#f59e0b"/></svg></div>
-          <h2>Tema Urban Hospital</h2>
-          <p>P.O. Box CO 2380, Tema, Greater Accra — Ghana Health Service</p>
-        </div>
-        <div class="memo-title-bar">INTER-DEPARTMENTAL MEMORANDUM</div>
-        <div class="memo-routing">
-          <table>
-            <tr><td>DATE:</td><td id="pMemoDate2">—</td></tr>
-            <tr><td>REF:</td><td id="pMemoRef2">—</td></tr>
-            <tr><td>FROM:</td><td id="pMemoFrom2">—</td></tr>
-            <tr><td>TO:</td><td id="pMemoTo2">—</td></tr>
-            <tr><td>SUBJECT:</td><td id="pMemoSubject2" style="font-weight:bold;text-transform:uppercase">—</td></tr>
-          </table>
-        </div>
-        <div class="memo-body-area" id="pMemoBody2">—</div>
-        <div class="sig-row">
-          <div class="sig-box">
-            <div class="sig-label">Requested by (Staff):</div>
-            <input type="text" placeholder="Full Name" id="sigReqName2">
-            <input type="text" placeholder="Designation / Role" id="sigReqRole2">
-            <input type="tel" placeholder="Phone Number" id="sigReqPhone2">
-            <div style="margin-top:10px;border-top:1px solid #999;padding-top:3px;font-size:.72rem;color:#666;">Signature &amp; Date</div>
-          </div>
-          <div class="sig-box">
-            <div class="sig-label">Approved by (Head of Unit):</div>
-            <input type="text" placeholder="Full Name" id="sigAppName2">
-            <input type="text" placeholder="Designation / Role" id="sigAppRole2">
-            <input type="tel" placeholder="Phone Number" id="sigAppPhone2">
-            <div style="margin-top:10px;border-top:1px solid #999;padding-top:3px;font-size:.72rem;color:#666;">Signature &amp; Date</div>
-          </div>
-        </div>
-        <div class="memo-print-label">REQUESTING UNIT COPY</div>
+      <div class="memo-title-bar">INTER-DEPARTMENTAL MEMORANDUM</div>
+      <div class="memo-routing">
+        <table>
+          <tr><td>DATE:</td><td id="pMemoDate">--</td></tr>
+          <tr><td>REF:</td><td id="pMemoRef">--</td></tr>
+          <tr><td>FROM:</td><td id="pMemoFrom">--</td></tr>
+          <tr><td>TO:</td><td id="pMemoTo">--</td></tr>
+          <tr><td>SUBJECT:</td><td id="pMemoSubject" style="font-weight:bold;text-transform:uppercase">--</td></tr>
+        </table>
       </div>
+      <div class="memo-body-area" id="pMemoBody">--</div>
+      <div class="sig-row">
+        <div class="sig-box">
+          <div class="sig-label">Requested by (Staff):</div>
+          <input type="text" placeholder="Full Name" id="sigReqName">
+          <input type="text" placeholder="Designation / Role" id="sigReqRole">
+          <input type="tel" placeholder="Phone Number" id="sigReqPhone">
+          <div style="margin-top:16px;border-top:1px solid #999;padding-top:4px;font-size:.78rem;color:#666;">Signature &amp; Date</div>
+        </div>
+        <div class="sig-box">
+          <div class="sig-label">Approved by (Head of Unit):</div>
+          <input type="text" placeholder="Full Name" id="sigAppName">
+          <input type="text" placeholder="Designation / Role" id="sigAppRole">
+          <input type="tel" placeholder="Phone Number" id="sigAppPhone">
+          <div style="margin-top:16px;border-top:1px solid #999;padding-top:4px;font-size:.78rem;color:#666;">Signature &amp; Date</div>
+        </div>
       </div>
       <div class="memo-actions">
-        <button class="btn-secondary" onclick="window.print()">🖨️ Print Memo (A5 × 2 copies)</button>
-        <button class="btn-secondary" onclick="document.getElementById('memoPrint').style.display='none'">✕ Close Preview</button>
+        <button class="btn-secondary" onclick="window.print()">Print Memo (A4 Portrait)</button>
+        <button class="btn-secondary" onclick="document.getElementById('memoPrint').style.display='none'">Close Preview</button>
       </div>
     </div>
   </div>
@@ -757,9 +737,8 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
      FIREBASE + APP LOGIC
 ══════════════════════════════════════════════════════ -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, updateDoc, doc, query, orderBy, where, serverTimestamp }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, updateDoc, doc, query, orderBy, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCJcGLF0hh3Wp_XVYmit9Vouzuh2CQgLzg",
@@ -770,16 +749,17 @@ const firebaseConfig = {
   appId: "1:1085948428628:web:9c1e41a405742a1c9748c1"
 };
 
-let db;
+let db = null;
 try {
   const app = initializeApp(firebaseConfig);
   db = getFirestore(app);
-  console.log("Firebase connected ✓");
+  console.log("Firebase modular SDK initialised OK");
 } catch(e) {
-  console.warn("Firebase not configured — using localStorage fallback");
+  console.error("Firebase init error:", e.message);
+  db = null;
 }
 
-// ── Constants ─────────────────────────────────────────
+// -- Constants -----------------------------------------
 const ADMIN_UNIT = "Maintenance";
 const DEFAULT_ADMIN_PASS = "admin2024";
 const DEFAULT_STAFF_PASS = "tema2024";
@@ -796,19 +776,19 @@ const ALL_UNITS = [
   "Procurement","Stores"
 ];
 
-// ── State ─────────────────────────────────────────────
+// -- State ---------------------------------------------
 let currentUser = null;
 let isAdmin = false;
 let allReports = [];
 let unitPasswords = {}; // loaded from Firebase
 
-// ── Load passwords from Firebase ──────────────────────
+// -- Load passwords from Firebase ----------------------
 async function loadPasswords() {
   if (!db) return;
   try {
     const snap = await getDoc(doc(db, 'config', 'passwords'));
     if (snap.exists()) unitPasswords = snap.data();
-  } catch(e) { console.warn("Could not load passwords", e); }
+  } catch(e) { console.warn("Could not load passwords:", e.message); }
 }
 
 function getPassword(unit) {
@@ -816,7 +796,7 @@ function getPassword(unit) {
   return unit === ADMIN_UNIT ? DEFAULT_ADMIN_PASS : DEFAULT_STAFF_PASS;
 }
 
-// ── Login ─────────────────────────────────────────────
+// -- Login ---------------------------------------------
 window.doLogin = async function() {
   const unit = document.getElementById('loginUnit').value;
   const pass = document.getElementById('loginPassword').value;
@@ -861,7 +841,7 @@ window.doLogout = function() {
   switchTab('report');
 };
 
-// ── Tab switching ──────────────────────────────────────
+// -- Tab switching --------------------------------------
 window.switchTab = function(name) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
@@ -873,7 +853,7 @@ window.switchTab = function(name) {
   if (name === 'passwords')  renderPwList();
 };
 
-// ── Priority ───────────────────────────────────────────
+// -- Priority -------------------------------------------
 let selectedPriority = '';
 window.setPriority = function(btn) {
   document.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('selected'));
@@ -888,7 +868,7 @@ window.catChanged = function(cat) {
   document.getElementById('cat-' + cat).classList.toggle('has-selection', sel.value !== '');
 };
 
-// ── Submit Report ──────────────────────────────────────
+// -- Submit Report --------------------------------------
 window.submitReport = async function() {
   const cats = ['electrical','plumbing','ac','carpentry','glazing','renovation'];
   const faults = [];
@@ -924,7 +904,7 @@ window.submitReport = async function() {
       stored.push(report);
       localStorage.setItem('tuh_reports', JSON.stringify(stored));
     }
-    showToast("✅ Fault report submitted successfully!");
+    showToast("[OK] Fault report submitted successfully!");
     resetForm();
     await loadMyReports();
     if (isAdmin) { await loadAllReports(); }
@@ -947,7 +927,7 @@ function resetForm() {
   selectedPriority = '';
 }
 
-// ── Load All Reports (Firebase) ────────────────────────
+// -- Load All Reports (Firebase) ------------------------
 window.loadAllReports = async function() {
   try {
     if (db) {
@@ -965,10 +945,10 @@ window.loadAllReports = async function() {
   renderDashboard();
 };
 
-// ── Load My Reports (Firebase — filtered by unit) ──────
+// -- Load My Reports (Firebase -- filtered by unit) ------
 window.loadMyReports = async function() {
   const el = document.getElementById('historyContent');
-  el.innerHTML = '<div class="loading">Loading your reports…</div>';
+  el.innerHTML = '<div class="loading">Loading your reports...</div>';
   let mine = [];
   try {
     if (db) {
@@ -1003,7 +983,7 @@ window.loadMyReports = async function() {
     (r.faults || []).forEach(f => {
       rows += `<tr>
         <td>${rowNum++}</td>
-        <td>${r.date || '—'}</td>
+        <td>${r.date || '--'}</td>
         <td>${capFirst(f.category)}</td>
         <td>${f.item}</td>
         <td><span class="badge badge-${r.priority || 'medium'}">${capFirst(r.priority || 'medium')}</span></td>
@@ -1017,7 +997,7 @@ window.loadMyReports = async function() {
     <p style="margin-top:10px;font-size:.8rem;color:var(--gray-500);text-align:right">${mine.length} report(s) found</p>`;
 };
 
-// ── Render All Reports Table ───────────────────────────
+// -- Render All Reports Table ---------------------------
 window.renderAllReports = function() {
   const search = (document.getElementById('searchReports')?.value || '').toLowerCase();
   const status = document.getElementById('filterStatus')?.value || '';
@@ -1042,12 +1022,12 @@ window.renderAllReports = function() {
   tbody.innerHTML = rows.map(({ r, f }, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td>${r.date || '—'}</td>
-      <td>${r.unit || '—'}</td>
+      <td>${r.date || '--'}</td>
+      <td>${r.unit || '--'}</td>
       <td>${capFirst(f.category)}</td>
       <td>${f.item}</td>
-      <td>${r.reporter || '—'}</td>
-      <td>${r.phone || '—'}</td>
+      <td>${r.reporter || '--'}</td>
+      <td>${r.phone || '--'}</td>
       <td><span class="badge badge-${r.priority || 'medium'}">${capFirst(r.priority || 'medium')}</span></td>
       <td><span class="badge badge-${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
       <td><select onchange="updateStatus('${r.id}',this.value)" style="font-size:.78rem;padding:3px 6px;border:1px solid var(--gray-300);border-radius:4px;font-family:'Inter',sans-serif;">
@@ -1064,7 +1044,7 @@ window.updateStatus = async function(id, status) {
   if (r) r.status = status;
   // Update Firebase
   if (db && id && !id.startsWith('local_')) {
-    try { await updateDoc(doc(db, 'reports', id), { status }); } catch(e) {}
+    try { await updateDoc(doc(db, 'reports', id), { status }); } catch(e) { console.error('updateStatus:', e.message); }
   }
   // Update localStorage fallback
   const stored = JSON.parse(localStorage.getItem('tuh_reports') || '[]');
@@ -1076,7 +1056,7 @@ window.updateStatus = async function(id, status) {
   showToast("Status updated to: " + status);
 };
 
-// ── Dashboard ──────────────────────────────────────────
+// -- Dashboard ------------------------------------------
 window.renderDashboard = function() {
   const period = document.getElementById('dashPeriod')?.value || 'month';
   const cRange = document.getElementById('customRange');
@@ -1097,7 +1077,7 @@ window.renderDashboard = function() {
     return d >= from && d <= toDate;
   });
 
-  // ── FLATTEN to individual fault items — each item carries the report status ──
+  // -- FLATTEN to individual fault items -- each item carries the report status --
   // Each item = { category, item, status, priority, unit, date }
   const allItems = [];
   inRange.forEach(r => {
@@ -1127,23 +1107,23 @@ window.renderDashboard = function() {
     : period === 'year' ? 'This Year' : 'Custom Range';
   document.getElementById('statusPeriodLabel').textContent = periodLabel;
 
-  // ── Stat cards — all based on ITEMS ──
+  // -- Stat cards -- all based on ITEMS --
   document.getElementById('dashStats').innerHTML = `
-    <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-val green">${totalReports}</div><div class="stat-lbl">Total Reports</div></div>
-    <div class="stat-card"><div class="stat-icon">🔩</div><div class="stat-val teal">${totalItems}</div><div class="stat-lbl">Total Fault Items</div></div>
-    <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-val orange">${pendingItems}</div><div class="stat-lbl">Items Pending</div></div>
-    <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-val blue">${progressItems}</div><div class="stat-lbl">Items In Progress</div></div>
-    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-val green">${resolvedItems}</div><div class="stat-lbl">Items Resolved</div></div>
-    <div class="stat-card"><div class="stat-icon">🔴</div><div class="stat-val red">${urgentItems}</div><div class="stat-lbl">Urgent Items</div></div>
+    <div class="stat-card"><div class="stat-icon">[RPT]</div><div class="stat-val green">${totalReports}</div><div class="stat-lbl">Total Reports</div></div>
+    <div class="stat-card"><div class="stat-icon">[FLT]</div><div class="stat-val teal">${totalItems}</div><div class="stat-lbl">Total Fault Items</div></div>
+    <div class="stat-card"><div class="stat-icon">[PND]</div><div class="stat-val orange">${pendingItems}</div><div class="stat-lbl">Items Pending</div></div>
+    <div class="stat-card"><div class="stat-icon">[WIP]</div><div class="stat-val blue">${progressItems}</div><div class="stat-lbl">Items In Progress</div></div>
+    <div class="stat-card"><div class="stat-icon">[OK]</div><div class="stat-val green">${resolvedItems}</div><div class="stat-lbl">Items Resolved</div></div>
+    <div class="stat-card"><div class="stat-icon">[URG]</div><div class="stat-val red">${urgentItems}</div><div class="stat-lbl">Urgent Items</div></div>
   `;
 
-  // ── Status breakdown bar chart — per ITEM ──
+  // -- Status breakdown bar chart -- per ITEM --
   const maxStatus = Math.max(pendingItems, progressItems, resolvedItems, 1);
   const resolveRate = totalItems > 0 ? Math.round(resolvedItems / totalItems * 100) : 0;
   document.getElementById('statusChart').innerHTML = [
-    { label: '⏳ Pending',     val: pendingItems,  cls: 'bar-orange' },
-    { label: '🔧 In Progress', val: progressItems, cls: 'bar-blue'   },
-    { label: '✅ Resolved',    val: resolvedItems, cls: 'bar-green'  },
+    { label: '[PND] Pending',     val: pendingItems,  cls: 'bar-orange' },
+    { label: '[WIP] In Progress', val: progressItems, cls: 'bar-blue'   },
+    { label: '[OK] Resolved',    val: resolvedItems, cls: 'bar-green'  },
   ].map(({ label, val, cls }) => {
     const pct = Math.round(val / maxStatus * 100);
     const pctOfTotal = totalItems > 0 ? Math.round(val / totalItems * 100) : 0;
@@ -1153,15 +1133,15 @@ window.renderDashboard = function() {
       <div style="font-size:.75rem;color:var(--gray-500);width:40px;text-align:right">${pctOfTotal}%</div>
     </div>`;
   }).join('') + `<div style="margin-top:10px;font-size:.8rem;color:var(--green-700);font-weight:600">
-    Item resolution rate: ${resolveRate}% &nbsp;·&nbsp; ${resolvedItems} of ${totalItems} fault items resolved
+    Item resolution rate: ${resolveRate}% &nbsp;.&nbsp; ${resolvedItems} of ${totalItems} fault items resolved
   </div>`;
 
-  // ── Category chart — per ITEM ──
+  // -- Category chart -- per ITEM --
   const catCount = {};
   allItems.forEach(i => { catCount[i.category] = (catCount[i.category] || 0) + 1; });
   const maxCat = Math.max(...Object.values(catCount), 1);
   const catColors = { electrical:'bar-orange', plumbing:'bar-blue', ac:'bar-teal', carpentry:'bar-purple', glazing:'bar-green', renovation:'bar-red' };
-  const catLabels = { electrical:'⚡ Electrical', plumbing:'🚿 Plumbing', ac:'❄️ A/C', carpentry:'🪚 Carpentry', glazing:'🪟 Glazing', renovation:'🏗️ Renovation' };
+  const catLabels = { electrical:'[ELC] Electrical', plumbing:'[PLB] Plumbing', ac:'[AC] A/C', carpentry:'[CRP] Carpentry', glazing:'[GLZ] Glazing', renovation:'[RNV] Renovation' };
   document.getElementById('catChart').innerHTML = Object.entries(catLabels).map(([k, lbl]) => {
     const v = catCount[k] || 0;
     const pct = Math.round(v / maxCat * 100);
@@ -1172,7 +1152,7 @@ window.renderDashboard = function() {
     </div>`;
   }).join('');
 
-  // ── Status per category (stacked view) ──
+  // -- Status per category (stacked view) --
   const catStatusEl = document.getElementById('catStatusChart');
   if (catStatusEl) {
     catStatusEl.innerHTML = Object.entries(catLabels).map(([k, lbl]) => {
@@ -1182,17 +1162,17 @@ window.renderDashboard = function() {
       const g = catItems.filter(i => i.status === 'In Progress').length;
       const r = catItems.filter(i => i.status === 'Resolved').length;
       return `<div style="margin-bottom:14px">
-        <div style="font-size:.82rem;font-weight:600;color:var(--gray-700);margin-bottom:5px">${lbl} — ${catItems.length} item(s)</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--gray-700);margin-bottom:5px">${lbl} -- ${catItems.length} item(s)</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <span class="badge badge-pending">⏳ ${p} Pending</span>
-          <span class="badge badge-progress">🔧 ${g} In Progress</span>
-          <span class="badge badge-done">✅ ${r} Resolved</span>
+          <span class="badge badge-pending">[PND] ${p} Pending</span>
+          <span class="badge badge-progress">[WIP] ${g} In Progress</span>
+          <span class="badge badge-done">[OK] ${r} Resolved</span>
         </div>
       </div>`;
     }).join('');
   }
 
-  // ── Unit chart — per ITEM ──
+  // -- Unit chart -- per ITEM --
   const unitCount = {};
   allItems.forEach(i => { unitCount[i.unit] = (unitCount[i.unit] || 0) + 1; });
   const topUnits = Object.entries(unitCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
@@ -1211,7 +1191,7 @@ window.renderDashboard = function() {
       }).join('')
     : '<p style="padding:12px;color:var(--gray-500);font-size:.85rem">No data for selected period.</p>';
 
-  // ── Top procurement items ──
+  // -- Top procurement items --
   const itemCount = {};
   allItems.forEach(i => { itemCount[i.item] = (itemCount[i.item] || 0) + 1; });
   const topItemsList = Object.entries(itemCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
@@ -1228,7 +1208,7 @@ window.renderDashboard = function() {
     : '<p style="padding:12px;color:var(--gray-500);font-size:.85rem">No data for selected period.</p>';
 };
 
-// ── Export Excel ───────────────────────────────────────
+// -- Export Excel ---------------------------------------
 window.exportToExcel = function() {
   if (!allReports.length) { showToast("No data to export", true); return; }
   const rows = [['Date','Unit','Reporter','Phone','Category','Fault/Item','Priority','Status','Notes']];
@@ -1253,10 +1233,10 @@ window.exportToExcel = function() {
   XLSX.utils.book_append_sheet(wb, ws3, 'Status Summary');
 
   XLSX.writeFile(wb, `TUH_Maintenance_Reports_${new Date().toISOString().split('T')[0]}.xlsx`);
-  showToast("📥 Excel file downloaded!");
+  showToast("[DL] Excel file downloaded!");
 };
 
-// ── Unit abbreviation map for memo reference codes ─────
+// -- Unit abbreviation map for memo reference codes -----
 const UNIT_ABBR = {
   "Medical Sup":"MED","Deputy Chief M. O":"DCM","HASS":"HAS","Head of Finance":"FIN",
   "Head of Pharmacy":"PHM","Head of Nursing Services":"NRS","Auditor":"AUD",
@@ -1293,7 +1273,7 @@ async function getNextMemoNumber(unit) {
   return count;
 }
 
-// ── Memo ───────────────────────────────────────────────
+// -- Memo -----------------------------------------------
 window.generateMemo = async function() {
   const subjectV = document.getElementById('memoSubject').value;
   const bodyV    = document.getElementById('memoBody').value;
@@ -1314,27 +1294,24 @@ window.generateMemo = async function() {
 
   const formattedDate = dateV
     ? new Date(dateV).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})
-    : '—';
+    : '--';
   const toV = document.getElementById('memoTo').value;
 
   // Populate BOTH copies
-  ['','2'].forEach(sfx => {
-    const el = id => document.getElementById(id + sfx);
-    if (!el('pMemoDate')) return;
-    el('pMemoDate').textContent    = formattedDate;
-    el('pMemoRef').textContent     = refV;
-    el('pMemoFrom').textContent    = fromUnit;
-    el('pMemoTo').textContent      = toV;
-    el('pMemoSubject').textContent = subjectV.toUpperCase();
-    el('pMemoBody').textContent    = bodyV;
-  });
+  // Populate memo fields
+  document.getElementById('pMemoDate').textContent    = formattedDate;
+  document.getElementById('pMemoRef').textContent     = refV;
+  document.getElementById('pMemoFrom').textContent    = fromUnit;
+  document.getElementById('pMemoTo').textContent      = toV;
+  document.getElementById('pMemoSubject').textContent = subjectV.toUpperCase();
+  document.getElementById('pMemoBody').textContent    = bodyV;
 
   document.getElementById('memoPrint').style.display = 'block';
   document.getElementById('memoPrint').scrollIntoView({ behavior: 'smooth' });
-  showToast('Memo generated — Ref: ' + refV);
+  showToast('Memo generated -- Ref: ' + refV);
 };
 
-// ── Password Management ────────────────────────────────
+// -- Password Management --------------------------------
 window.renderPwList = function() {
   const html = ALL_UNITS.map(u => `
     <div class="unit-pw-card" id="pwcard-${u.replace(/\s+/g,'_').replace(/\//g,'_')}">
@@ -1367,13 +1344,13 @@ window.saveSinglePassword = async function(unit) {
   if (db) {
     try {
       await setDoc(doc(db, 'config', 'passwords'), unitPasswords);
-      showToast("✅ Password updated for " + unit);
+      showToast('[OK] Password updated for ' + unit);
       document.getElementById('pw-' + key).value = '';
       document.getElementById('pwshow-' + key).placeholder = 'Current: (custom set)';
     } catch(e) { showToast("Error saving: " + e.message, true); }
   } else {
     localStorage.setItem('tuh_passwords', JSON.stringify(unitPasswords));
-    showToast("✅ Password updated for " + unit + " (local)");
+    showToast("[OK] Password updated for " + unit + " (local)");
     document.getElementById('pw-' + key).value = '';
     document.getElementById('pwshow-' + key).placeholder = 'Current: (custom set)';
   }
@@ -1393,17 +1370,17 @@ window.saveAllPasswords = async function() {
   if (db) {
     try {
       await setDoc(doc(db, 'config', 'passwords'), unitPasswords);
-      showToast("✅ " + count + " password(s) saved successfully!");
+      showToast('[OK] ' + count + ' password(s) saved successfully!');
       renderPwList();
     } catch(e) { showToast("Error saving: " + e.message, true); }
   } else {
     localStorage.setItem('tuh_passwords', JSON.stringify(unitPasswords));
-    showToast("✅ " + count + " password(s) saved (local)");
+    showToast("[OK] " + count + " password(s) saved (local)");
     renderPwList();
   }
 };
 
-// ── Helpers ────────────────────────────────────────────
+// -- Helpers --------------------------------------------
 function capFirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
 function statusClass(s) { return s === 'Resolved' ? 'done' : s === 'In Progress' ? 'progress' : 'pending'; }
 
@@ -1414,7 +1391,7 @@ window.showToast = function(msg, isError = false) {
   setTimeout(() => t.className = 'toast', 3200);
 };
 
-// ── Init ───────────────────────────────────────────────
+// -- Init -----------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('rptDate').value  = today;
