@@ -1308,7 +1308,7 @@ window.generateMemo = async function() {
   let refV = document.getElementById('memoRef').value.trim();
   if (!refV) {
     const num = await getNextMemoNumber(fromUnit);
-    refV = \`TUH/\${abbr}/\${year}/\${String(num).padStart(3,'0')}\`;
+    refV = `TUH/${abbr}/${year}/${String(num).padStart(3,'0')}`;
     document.getElementById('memoRef').value = refV;
   }
 
