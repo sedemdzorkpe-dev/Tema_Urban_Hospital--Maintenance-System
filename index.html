@@ -871,33 +871,15 @@ window.doLogin = async function() {
   const expected = getPassword(unit);
   if (pass !== expected) { showToast("Incorrect password. Please try again.", true); return; }
 
-  currentUser = unit;
-  isAdmin = unit === ADMIN_UNIT;
+  await setupSession(unit);
 
-  document.getElementById('loginPage').style.display = 'none';
-  document.getElementById('appPage').style.display   = 'block';
-  document.getElementById('currentUnitDisplay').textContent = unit;
-  document.getElementById('rptUnit').value  = unit;
-  document.getElementById('memoFrom').value = unit;
-
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('rptDate').value  = today;
-  document.getElementById('memoDate').value = today;
-
-  if (isAdmin) {
-    document.getElementById('tab-dashboard').style.display  = 'flex';
-    document.getElementById('tab-allreports').style.display = 'flex';
-    document.getElementById('tab-passwords').style.display  = 'flex';
-    document.getElementById('tab-allmemos').style.display   = 'flex';
-    await loadAllReports();
-    renderPwList();
-  }
-  await loadMyReports();
-  await loadMyMemos();
+  // Persist session so page refresh keeps user logged in
+  sessionStorage.setItem('tuh_session', JSON.stringify({ unit }));
 };
 
 window.doLogout = function() {
   currentUser = null; isAdmin = false; allReports = []; unitPasswords = {};
+  sessionStorage.removeItem('tuh_session'); // clear persisted session
   document.getElementById('appPage').style.display   = 'none';
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('loginPage').style.flexDirection = 'column';
@@ -1849,11 +1831,54 @@ window.showToast = function(msg, isError = false) {
   setTimeout(() => t.className = 'toast', 3200);
 };
 
-// -- Init -----------------------------------------------
-document.addEventListener('DOMContentLoaded', () => {
+// -- Shared login setup (called from doLogin and session restore) ----
+async function setupSession(unit) {
+  currentUser = unit;
+  isAdmin     = unit === ADMIN_UNIT;
+
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('appPage').style.display   = 'block';
+  document.getElementById('currentUnitDisplay').textContent = unit;
+  document.getElementById('rptUnit').value  = unit;
+  document.getElementById('memoFrom').value = unit;
+
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('rptDate').value  = today;
   document.getElementById('memoDate').value = today;
+
+  if (isAdmin) {
+    document.getElementById('tab-dashboard').style.display  = 'flex';
+    document.getElementById('tab-allreports').style.display = 'flex';
+    document.getElementById('tab-passwords').style.display  = 'flex';
+    document.getElementById('tab-allmemos').style.display   = 'flex';
+    await loadAllReports();
+    renderPwList();
+  }
+  await loadMyReports();
+  await loadMyMemos();
+}
+
+// -- Init -----------------------------------------------
+document.addEventListener('DOMContentLoaded', async () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('rptDate').value  = today;
+  document.getElementById('memoDate').value = today;
+
+  // Restore session if user was previously logged in
+  const saved = sessionStorage.getItem('tuh_session');
+  if (saved) {
+    try {
+      const { unit } = JSON.parse(saved);
+      if (unit) {
+        await loadPasswords(); // reload passwords from Firebase
+        await setupSession(unit);
+        console.log('Session restored for:', unit);
+      }
+    } catch(e) {
+      sessionStorage.removeItem('tuh_session');
+      console.warn('Session restore failed:', e.message);
+    }
+  }
 });
 
 // Helper: populate memoFrom when user logs in (called from doLogin)
