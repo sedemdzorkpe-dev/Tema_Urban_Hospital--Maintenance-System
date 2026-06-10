@@ -917,16 +917,24 @@ window.loadMyReports = async function() {
   let mine = [];
   try {
     if (db) {
-      const q = query(collection(db, 'reports'), where('unit', '==', currentUser), orderBy('createdAt', 'desc'));
+      // Use only where() - no orderBy() - avoids composite index requirement in Firestore
+      const q = query(collection(db, 'reports'), where('unit', '==', currentUser));
       const snap = await getDocs(q);
       mine = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Sort newest first in JavaScript
+      mine.sort((a, b) => {
+        const da = a.date || (typeof a.createdAt === 'string' ? a.createdAt : '');
+        const db2 = b.date || (typeof b.createdAt === 'string' ? b.createdAt : '');
+        return db2.localeCompare(da);
+      });
     } else {
       const all = JSON.parse(localStorage.getItem('tuh_reports') || '[]');
       mine = all.filter(r => r.unit === currentUser).reverse();
     }
   } catch(e) {
-    const all = JSON.parse(localStorage.getItem('tuh_reports') || '[]');
-    mine = all.filter(r => r.unit === currentUser).reverse();
+    console.error("loadMyReports error:", e.message);
+    el.innerHTML = '<div class="empty-state"><p style="color:var(--red-500)">Error loading reports: ' + e.message + '</p><p style="margin-top:8px;font-size:.8rem;color:var(--gray-500)">Please try refreshing the page.</p></div>';
+    return;
   }
 
   if (!mine.length) {
