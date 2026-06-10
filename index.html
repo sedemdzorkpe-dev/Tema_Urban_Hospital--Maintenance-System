@@ -1466,7 +1466,7 @@ window.loadMyMemos = async function() {
       '<td>' + (m.subject || '--') + '</td>' +
       '<td>' + (m.toUnit || '--') + '</td>' +
       '<td>' + (m.submittedAt ? new Date(m.submittedAt).toLocaleDateString('en-GB') : '--') + '</td>' +
-      '<td><button class="pw-save-btn" onclick="viewMemoDetail(\'' + m.id + '\','unit')">View &amp; Print</button></td>' +
+      '<td><button class="pw-save-btn" data-id="' + m.id + '" data-src="unit" onclick="handleMemoView(this)">View &amp; Print</button></td>' +
       '</tr>'
     ).join('') +
     '</tbody></table></div>' +
@@ -1522,7 +1522,7 @@ window.renderAllMemos = function() {
     '<td>' + (m.toUnit || '--') + '</td>' +
     '<td>' + (m.subject || '--') + '</td>' +
     '<td>' + (m.submittedAt ? new Date(m.submittedAt).toLocaleDateString('en-GB') : '--') + '</td>' +
-    '<td><button class="pw-save-btn" onclick="viewMemoDetail(\''+ m.id +'\',\'admin\')">View &amp; Print</button></td>' +
+    '<td><button class="pw-save-btn" data-id="' + m.id + '" data-src="admin" onclick="handleMemoView(this)">View &amp; Print</button></td>' +
     '</tr>'
   ).join('');
 };
@@ -1568,6 +1568,13 @@ function buildMemoHTML(m) {
 }
 
 // -- Open memo in modal (admin all-memos view OR unit my-memos click) -
+// Use data attributes to avoid onclick quote escaping issues
+window.handleMemoView = function(btn) {
+  const id  = btn.getAttribute('data-id');
+  const src = btn.getAttribute('data-src');
+  window.viewMemoDetail(id, src);
+};
+
 window.viewMemoDetail = function(id, source) {
   // source = 'admin' or 'unit'
   const pool = source === 'unit' ? (window._myMemos || []) : (window._allMemos || []);
