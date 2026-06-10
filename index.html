@@ -707,6 +707,7 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
           <option value="renovation">Renovation</option>
         </select>
         <button class="btn-export" onclick="exportToExcel()">📥 Export Excel</button>
+        <button class="btn-danger" style="padding:7px 14px;border-radius:var(--radius-sm);font-size:.85rem;cursor:pointer;font-family:Inter,sans-serif" onclick="clearResolvedReports()">🗑️ Clear Resolved</button>
       </div>
       <div class="table-wrap">
         <table class="data-table">
@@ -753,11 +754,13 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
     <div class="card" style="margin-top:20px">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
         <input type="text" id="memoSearch" placeholder="Search unit, subject, ref..." oninput="renderAllMemos()" style="padding:8px 12px;border:1.5px solid var(--green-300);border-radius:var(--radius-sm);font-size:.85rem;font-family:Inter,sans-serif;flex:1;min-width:180px">
+        <button class="btn-filter" onclick="renderAllMemos()">Search</button>
         <select id="memoUnitFilter" onchange="renderAllMemos()" style="padding:8px 10px;border:1.5px solid var(--green-300);border-radius:var(--radius-sm);font-size:.85rem;font-family:Inter,sans-serif">
           <option value="">All Units</option>
         </select>
         <button class="btn-export" onclick="exportMemosExcel()">Export Excel</button>
         <button class="btn-filter" onclick="loadAllMemos()">Refresh</button>
+        <button class="btn-danger" style="padding:7px 14px;border-radius:var(--radius-sm);font-size:.85rem;cursor:pointer;font-family:Inter,sans-serif" onclick="clearAllMemos()">🗑️ Clear All Memos</button>
       </div>
       <div class="table-wrap">
         <table class="data-table">
@@ -767,6 +770,36 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
       </div>
       <div id="noMemosMsg" class="empty-state" style="display:none">
         <p>No memos submitted yet.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MEMO VIEW MODAL (Admin print any unit memo) ── -->
+  <div id="memoViewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;overflow-y:auto;padding:20px">
+    <div style="background:white;max-width:700px;margin:0 auto;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+      <div style="background:linear-gradient(135deg,#064e3b,#047857);padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+        <span style="color:white;font-weight:700;font-size:1rem">Memo Preview</span>
+        <button onclick="closeMemoModal()" style="background:rgba(255,255,255,.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center">x</button>
+      </div>
+      <div id="memoModalBody" style="padding:24px;font-family:'Times New Roman',serif">
+        <!-- filled dynamically -->
+      </div>
+      <div style="padding:16px 24px;border-top:1px solid #e5e7eb;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-primary" style="width:auto;padding:10px 20px" onclick="printMemoModal()">Print This Memo (A4)</button>
+        <button class="btn-secondary" onclick="closeMemoModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CONFIRM DELETE MODAL ── -->
+  <div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:none;align-items:center;justify-content:center;padding:20px">
+    <div style="background:white;border-radius:12px;padding:28px;max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.2)">
+      <div style="font-size:2rem;text-align:center;margin-bottom:12px">⚠️</div>
+      <h3 id="confirmTitle" style="font-size:1.1rem;font-weight:700;text-align:center;margin-bottom:8px;color:#111827">Confirm Delete</h3>
+      <p id="confirmMsg" style="font-size:.88rem;color:#6b7280;text-align:center;margin-bottom:20px">Are you sure?</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button id="confirmYesBtn" class="btn-danger" style="padding:10px 24px">Yes, Delete</button>
+        <button class="btn-secondary" onclick="closeConfirm()">Cancel</button>
       </div>
     </div>
   </div>
@@ -1419,20 +1452,25 @@ window.loadMyMemos = async function() {
     console.error("loadMyMemos:", e.message);
   }
 
+  window._myMemos = memos; // store for viewMemoDetail
   if (!memos.length) {
     el.innerHTML = '<div class="empty-state"><p>No memos submitted yet from your unit.</p></div>';
     return;
   }
-  el.innerHTML = '<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Date</th><th>Ref No.</th><th>Subject</th><th>To</th><th>Submitted</th></tr></thead><tbody>' +
-    memos.map((m, i) => '<tr>' +
+  el.innerHTML = '<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Date</th><th>Ref No.</th><th>Subject</th><th>To</th><th>Submitted</th><th>Action</th></tr></thead><tbody>' +
+    memos.map((m, i) =>
+      '<tr>' +
       '<td>' + (i+1) + '</td>' +
       '<td>' + (m.date || '--') + '</td>' +
       '<td style="font-weight:600;color:var(--green-700)">' + (m.ref || '--') + '</td>' +
       '<td>' + (m.subject || '--') + '</td>' +
       '<td>' + (m.toUnit || '--') + '</td>' +
       '<td>' + (m.submittedAt ? new Date(m.submittedAt).toLocaleDateString('en-GB') : '--') + '</td>' +
-    '</tr>').join('') +
-    '</tbody></table></div>';
+      '<td><button class="pw-save-btn" onclick="viewMemoDetail(\'' + m.id + '\','unit')">View &amp; Print</button></td>' +
+      '</tr>'
+    ).join('') +
+    '</tbody></table></div>' +
+    '<p style="margin-top:8px;font-size:.78rem;color:var(--gray-500)">Click View &amp; Print to open and print any memo.</p>';
 };
 
 // -- Admin: load ALL memos ------------------------------
@@ -1484,28 +1522,156 @@ window.renderAllMemos = function() {
     '<td>' + (m.toUnit || '--') + '</td>' +
     '<td>' + (m.subject || '--') + '</td>' +
     '<td>' + (m.submittedAt ? new Date(m.submittedAt).toLocaleDateString('en-GB') : '--') + '</td>' +
-    '<td><button class="pw-save-btn" onclick="viewMemoDetail(' + "'" + m.id + "'" + ')">View</button></td>' +
+    '<td><button class="pw-save-btn" onclick="viewMemoDetail(\''+ m.id +'\',\'admin\')">View &amp; Print</button></td>' +
     '</tr>'
   ).join('');
 };
 
-window.viewMemoDetail = function(id) {
-  const m = (window._allMemos || []).find(x => x.id === id);
-  if (!m) return;
-  const d = new Date(m.date).toLocaleDateString('en-GB', {day:'2-digit',month:'long',year:'numeric'});
-  document.getElementById('pMemoDate').textContent    = d;
-  document.getElementById('pMemoRef').textContent     = m.ref || '--';
-  document.getElementById('pMemoFrom').textContent    = m.unit || '--';
-  document.getElementById('pMemoTo').textContent      = m.toUnit || '--';
-  document.getElementById('pMemoSubject').textContent = (m.subject || '--').toUpperCase();
-  document.getElementById('pMemoBody').textContent    = m.body || '--';
-  // Clear sig fields
-  ['sigReqName','sigReqRole','sigReqPhone','sigAppName','sigAppRole','sigAppPhone'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  document.getElementById('memoPrint').style.display = 'block';
-  document.getElementById('memoPrint').scrollIntoView({ behavior: 'smooth' });
-  switchTab('allmemos');
+// -- Build memo HTML for modal/print ------------------
+function buildMemoHTML(m) {
+  const d = m.date ? new Date(m.date).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'}) : '--';
+  return '<div id="modalMemoContent" style="font-family:Times New Roman,serif">' +
+    '<div style="text-align:center;border-bottom:3px double #047857;padding-bottom:10px;margin-bottom:12px">' +
+      '<div style="width:60px;height:60px;border-radius:50%;background:#ecfdf5;border:3px solid #047857;margin:0 auto 8px;display:flex;align-items:center;justify-content:center">' +
+        '<svg viewBox="0 0 60 60" width="36" height="36" fill="none"><rect x="10" y="28" width="40" height="22" rx="2" fill="#065f46"/><rect x="18" y="20" width="24" height="10" rx="1" fill="#047857"/><rect x="26" y="32" width="8" height="10" rx="1" fill="white"/><rect x="28" y="4" width="4" height="12" rx="1" fill="#f59e0b"/><rect x="24" y="8" width="12" height="4" rx="1" fill="#f59e0b"/></svg>' +
+      '</div>' +
+      '<div style="font-family:Georgia,serif;font-size:1.05rem;font-weight:bold;color:#064e3b;text-transform:uppercase;letter-spacing:1px">Tema Urban Hospital</div>' +
+      '<div style="font-size:.78rem;color:#444;margin-top:3px">P.M.Bag Tema Community 2 &nbsp;|&nbsp; Tel: 0302944398 &nbsp;|&nbsp; GPS: GT-056-4041</div>' +
+      '<div style="font-size:.72rem;color:#666;letter-spacing:.5px;margin-top:2px">GHANA HEALTH SERVICE</div>' +
+    '</div>' +
+    '<div style="text-align:center;background:#064e3b;color:white;padding:7px 0;font-size:.85rem;font-weight:bold;letter-spacing:3px;margin-bottom:12px">INTER-DEPARTMENTAL MEMORANDUM</div>' +
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:12px">' +
+      '<tr><td style="font-weight:bold;width:90px;color:#047857;padding:3px 6px;border-bottom:1px dotted #ccc;font-size:.88rem">DATE:</td><td style="padding:3px 6px;border-bottom:1px dotted #ccc;font-size:.88rem">' + d + '</td></tr>' +
+      '<tr><td style="font-weight:bold;color:#047857;padding:3px 6px;border-bottom:1px dotted #ccc;font-size:.88rem">REF:</td><td style="padding:3px 6px;border-bottom:1px dotted #ccc;font-size:.88rem;font-weight:600;color:#047857">' + (m.ref||'--') + '</td></tr>' +
+      '<tr><td style="font-weight:bold;color:#047857;padding:3px 6px;border-bottom:1px dotted #ccc;font-size:.88rem">FROM:</td><td style="padding:3px 6px;border-bottom:1px dotted #ccc;font-size:.88rem">' + (m.unit||'--') + '</td></tr>' +
+      '<tr><td style="font-weight:bold;color:#047857;padding:3px 6px;border-bottom:1px dotted #ccc;font-size:.88rem">TO:</td><td style="padding:3px 6px;border-bottom:1px dotted #ccc;font-size:.88rem">' + (m.toUnit||'--') + '</td></tr>' +
+      '<tr><td style="font-weight:bold;color:#047857;padding:3px 6px;font-size:.88rem">SUBJECT:</td><td style="padding:3px 6px;font-weight:bold;font-size:.88rem;text-transform:uppercase">' + (m.subject||'--') + '</td></tr>' +
+    '</table>' +
+    '<div style="min-height:80px;border:1px solid #d1d5db;border-radius:4px;padding:10px;margin-bottom:14px;font-size:.88rem;line-height:1.6;white-space:pre-wrap">' + (m.body||'--') + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:14px">' +
+      '<div style="border-top:1.5px solid #999;padding-top:8px">' +
+        '<div style="font-size:.72rem;font-weight:bold;color:#047857;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Requested by (Staff):</div>' +
+        '<div style="border-bottom:1px dotted #aaa;padding:2px 0 8px;font-size:.83rem;min-height:22px"></div>' +
+        '<div style="border-bottom:1px dotted #aaa;padding:2px 0 8px;font-size:.83rem;min-height:22px;margin-top:4px"></div>' +
+        '<div style="border-bottom:1px dotted #aaa;padding:2px 0 8px;font-size:.83rem;min-height:22px;margin-top:4px"></div>' +
+        '<div style="margin-top:8px;border-top:1px solid #999;padding-top:3px;font-size:.72rem;color:#666">Signature &amp; Date</div>' +
+      '</div>' +
+      '<div style="border-top:1.5px solid #999;padding-top:8px">' +
+        '<div style="font-size:.72rem;font-weight:bold;color:#047857;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Approved by (Head of Unit):</div>' +
+        '<div style="border-bottom:1px dotted #aaa;padding:2px 0 8px;font-size:.83rem;min-height:22px"></div>' +
+        '<div style="border-bottom:1px dotted #aaa;padding:2px 0 8px;font-size:.83rem;min-height:22px;margin-top:4px"></div>' +
+        '<div style="border-bottom:1px dotted #aaa;padding:2px 0 8px;font-size:.83rem;min-height:22px;margin-top:4px"></div>' +
+        '<div style="margin-top:8px;border-top:1px solid #999;padding-top:3px;font-size:.72rem;color:#666">Signature &amp; Date</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// -- Open memo in modal (admin all-memos view OR unit my-memos click) -
+window.viewMemoDetail = function(id, source) {
+  // source = 'admin' or 'unit'
+  const pool = source === 'unit' ? (window._myMemos || []) : (window._allMemos || []);
+  const m = pool.find(x => x.id === id);
+  if (!m) { showToast('Could not load memo', true); return; }
+
+  document.getElementById('memoModalBody').innerHTML = buildMemoHTML(m);
+  document.getElementById('memoViewModal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeMemoModal = function() {
+  document.getElementById('memoViewModal').style.display = 'none';
+  document.body.style.overflow = '';
+};
+
+window.printMemoModal = function() {
+  const content = document.getElementById('modalMemoContent');
+  if (!content) return;
+  const w = window.open('', '_blank', 'width=800,height=1000');
+  w.document.write('<html><head><title>Memo Print</title><style>' +
+    '@page{size:A4 portrait;margin:14mm 16mm}' +
+    'body{font-family:"Times New Roman",serif;font-size:11pt;color:#000}' +
+    '*{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '</style></head><body>' + content.innerHTML + '</body></html>');
+  w.document.close();
+  w.focus();
+  setTimeout(() => { w.print(); w.close(); }, 400);
+};
+
+// -- Confirm modal helper ----------------------------
+let _confirmCallback = null;
+window.showConfirm = function(title, msg, callback) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent   = msg;
+  _confirmCallback = callback;
+  const modal = document.getElementById('confirmModal');
+  modal.style.display = 'flex';
+};
+window.closeConfirm = function() {
+  document.getElementById('confirmModal').style.display = 'none';
+  _confirmCallback = null;
+};
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.id === 'confirmYesBtn') {
+    document.getElementById('confirmModal').style.display = 'none';
+    if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
+  }
+});
+
+// -- Clear all Resolved reports -----------------------
+window.clearResolvedReports = function() {
+  const resolved = allReports.filter(r => r.status === 'Resolved');
+  if (!resolved.length) { showToast('No resolved reports to clear', true); return; }
+  showConfirm(
+    'Clear Resolved Reports',
+    'This will permanently delete all ' + resolved.length + ' resolved report(s). Export to Excel first to keep a record. Continue?',
+    async function() {
+      let deleted = 0;
+      for (const r of resolved) {
+        try {
+          if (db && r.id && !r.id.startsWith('local_')) {
+            const { deleteDoc, doc: docRef } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+            await deleteDoc(docRef(db, 'reports', r.id));
+          }
+          deleted++;
+        } catch(e) { console.error('Delete error:', e.message); }
+      }
+      // Also clear from localStorage
+      const stored = JSON.parse(localStorage.getItem('tuh_reports') || '[]');
+      const kept   = stored.filter(r => r.status !== 'Resolved');
+      localStorage.setItem('tuh_reports', JSON.stringify(kept));
+      allReports = allReports.filter(r => r.status !== 'Resolved');
+      renderAllReports();
+      renderDashboard();
+      showToast('[OK] Deleted ' + deleted + ' resolved report(s)');
+    }
+  );
+};
+
+// -- Clear all memos ----------------------------------
+window.clearAllMemos = function() {
+  const memos = window._allMemos || [];
+  if (!memos.length) { showToast('No memos to clear', true); return; }
+  showConfirm(
+    'Clear All Memos',
+    'This will permanently delete all ' + memos.length + ' memo(s). Export to Excel first to keep a record. Continue?',
+    async function() {
+      let deleted = 0;
+      for (const m of memos) {
+        try {
+          if (db && m.id && !m.id.startsWith('local_')) {
+            const { deleteDoc, doc: docRef } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+            await deleteDoc(docRef(db, 'memos', m.id));
+          }
+          deleted++;
+        } catch(e) { console.error('Delete memo error:', e.message); }
+      }
+      localStorage.removeItem('tuh_memos');
+      window._allMemos = [];
+      renderAllMemos();
+      showToast('[OK] Deleted ' + deleted + ' memo(s)');
+    }
+  );
 };
 
 window.exportMemosExcel = function() {
