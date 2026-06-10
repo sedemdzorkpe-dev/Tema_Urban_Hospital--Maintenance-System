@@ -1396,6 +1396,15 @@ window.closeMemoPreview = function() {
 // -- Submit memo to Firebase ----------------------------
 window.submitMemo = async function() {
   if (!currentMemoData) { showToast("Please generate a memo first", true); return; }
+
+  // Capture signature details from the inline preview form fields
+  const g = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  currentMemoData.sigReqName  = g('sigReqName');
+  currentMemoData.sigReqRole  = g('sigReqRole');
+  currentMemoData.sigReqPhone = g('sigReqPhone');
+  currentMemoData.sigAppName  = g('sigAppName');
+  currentMemoData.sigAppRole  = g('sigAppRole');
+  currentMemoData.sigAppPhone = g('sigAppPhone');
   currentMemoData.submittedAt = new Date().toISOString();
 
   try {
@@ -1412,6 +1421,8 @@ window.submitMemo = async function() {
     document.getElementById('memoSubject').value = '';
     document.getElementById('memoBody').value = '';
     document.getElementById('memoRef').value = '';
+    ['sigReqName','sigReqRole','sigReqPhone','sigAppName','sigAppRole','sigAppPhone']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     document.getElementById('memoPrint').style.display = 'none';
     currentMemoData = null;
     loadMyMemos();
@@ -1570,6 +1581,19 @@ window.viewMemoDetail = function(id, source) {
   if (!m) { showToast('Could not load memo', true); return; }
 
   document.getElementById('memoModalBody').innerHTML = buildMemoHTML(m);
+
+  // Pre-fill saved signature details so they show immediately
+  const pf = (elId, val) => {
+    const el = document.getElementById(elId);
+    if (el && val) el.value = val;
+  };
+  pf('mSigReqName',  m.sigReqName);
+  pf('mSigReqRole',  m.sigReqRole);
+  pf('mSigReqPhone', m.sigReqPhone);
+  pf('mSigAppName',  m.sigAppName);
+  pf('mSigAppRole',  m.sigAppRole);
+  pf('mSigAppPhone', m.sigAppPhone);
+
   document.getElementById('memoViewModal').style.display = 'block';
   document.body.style.overflow = 'hidden';
 };
