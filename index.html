@@ -443,6 +443,10 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Manage Passwords
     </button>
+    <button class="nav-tab" onclick="switchTab('allmemos')" id="tab-allmemos" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      All Memos
+    </button>
   </div>
 
   <!-- ── REPORT FAULT ── -->
@@ -519,20 +523,31 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
   <div id="page-memo" class="page-content">
     <div class="page-hero">
       <div class="page-hero-icon">📄</div>
-      <div class="page-hero-text"><h2>Official Memo Generator</h2><p>Create formal maintenance request memos for approval</p></div>
+      <div class="page-hero-text"><h2>Official Memo Generator</h2><p>Create and submit official maintenance request memos — private to your unit</p></div>
     </div>
-    <div class="card" style="margin-top:20px">
-      <div class="section-label">Memo Details</div>
+
+    <!-- Compose form -->
+    <div class="card" style="margin-top:20px" id="memoComposeCard">
+      <div class="section-label">Compose Memo</div>
       <div class="grid-2">
-        <div class="form-group"><label>FROM Unit</label><input type="text" id="memoFrom" placeholder="Unit sending memo"></div>
+        <div class="form-group"><label>FROM Unit</label><input type="text" id="memoFrom" readonly style="background:var(--gray-50)"></div>
         <div class="form-group"><label>TO Unit</label><input type="text" id="memoTo" value="Maintenance Unit"></div>
         <div class="form-group"><label>Memo Date</label><input type="date" id="memoDate"></div>
         <div class="form-group"><label>Reference No. <span style="font-size:.75rem;color:var(--green-600);font-weight:400">(auto-generated)</span></label><input type="text" id="memoRef" readonly style="background:var(--green-50);color:var(--green-800);font-weight:600" placeholder="Auto-generated on preview"></div>
       </div>
-      <div class="form-group"><label>Subject / Title of Memo</label><input type="text" id="memoSubject" placeholder="e.g. Request for Electrical Repairs in Laboratory"></div>
+      <div class="form-group"><label>Subject / Title of Memo</label><input type="text" id="memoSubject" placeholder="e.g. Request for Electrical Repairs — Laboratory"></div>
       <div class="section-label">Memo Body</div>
-      <div class="form-group"><textarea id="memoBody" style="min-height:160px" placeholder="Write the body of the memo here…"></textarea></div>
-      <button class="btn-primary" onclick="generateMemo()" style="margin-bottom:16px">📝 Generate Memo Preview</button>
+      <div class="form-group"><textarea id="memoBody" style="min-height:160px" placeholder="Write the body of the memo here..."></textarea></div>
+      <button class="btn-primary" onclick="generateMemo()" style="margin-bottom:4px">Preview Memo</button>
+    </div>
+
+    <!-- My submitted memos list -->
+    <div class="card" id="myMemosCard">
+      <div class="card-header">
+        <div class="card-title">My Submitted Memos</div>
+        <button class="btn-secondary" onclick="loadMyMemos()">Refresh</button>
+      </div>
+      <div id="myMemosList"><div class="loading">Loading...</div></div>
     </div>
     <div id="memoPrint" style="display:none">
       <div class="memo-hospital-header">
@@ -572,7 +587,8 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
       </div>
       <div class="memo-actions">
         <button class="btn-secondary" onclick="window.print()">Print Memo (A4 Portrait)</button>
-        <button class="btn-secondary" onclick="document.getElementById('memoPrint').style.display='none'">Close Preview</button>
+        <button class="btn-primary" style="width:auto;padding:9px 20px" onclick="submitMemo()">Submit Memo to Maintenance</button>
+        <button class="btn-secondary" onclick="closeMemoPreview()">Close Preview</button>
       </div>
     </div>
   </div>
@@ -728,7 +744,34 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
       <div id="pwList"></div>
     </div>
   </div>
-</div>
+  <!-- ── ALL MEMOS (ADMIN) ── -->
+  <div id="page-allmemos" class="page-content">
+    <div class="page-hero">
+      <div class="page-hero-icon">📂</div>
+      <div class="page-hero-text"><h2>All Submitted Memos</h2><p>Every memo submitted by all units — visible to Maintenance Officer only</p></div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <input type="text" id="memoSearch" placeholder="Search unit, subject, ref..." oninput="renderAllMemos()" style="padding:8px 12px;border:1.5px solid var(--green-300);border-radius:var(--radius-sm);font-size:.85rem;font-family:Inter,sans-serif;flex:1;min-width:180px">
+        <select id="memoUnitFilter" onchange="renderAllMemos()" style="padding:8px 10px;border:1.5px solid var(--green-300);border-radius:var(--radius-sm);font-size:.85rem;font-family:Inter,sans-serif">
+          <option value="">All Units</option>
+        </select>
+        <button class="btn-export" onclick="exportMemosExcel()">Export Excel</button>
+        <button class="btn-filter" onclick="loadAllMemos()">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Date</th><th>Ref No.</th><th>From Unit</th><th>To</th><th>Subject</th><th>Submitted</th><th>Action</th></tr></thead>
+          <tbody id="allMemosBody"></tbody>
+        </table>
+      </div>
+      <div id="noMemosMsg" class="empty-state" style="display:none">
+        <p>No memos submitted yet.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end appPage -->
 
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
@@ -824,10 +867,12 @@ window.doLogin = async function() {
     document.getElementById('tab-dashboard').style.display  = 'flex';
     document.getElementById('tab-allreports').style.display = 'flex';
     document.getElementById('tab-passwords').style.display  = 'flex';
+    document.getElementById('tab-allmemos').style.display   = 'flex';
     await loadAllReports();
     renderPwList();
   }
   await loadMyReports();
+  await loadMyMemos();
 };
 
 window.doLogout = function() {
@@ -837,7 +882,7 @@ window.doLogout = function() {
   document.getElementById('loginPage').style.flexDirection = 'column';
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginUnit').value = '';
-  ['tab-dashboard','tab-allreports','tab-passwords'].forEach(id => document.getElementById(id).style.display = 'none');
+  ['tab-dashboard','tab-allreports','tab-passwords','tab-allmemos'].forEach(id => document.getElementById(id).style.display = 'none');
   switchTab('report');
 };
 
@@ -851,6 +896,8 @@ window.switchTab = function(name) {
   if (name === 'allreports') renderAllReports();
   if (name === 'history')    loadMyReports();
   if (name === 'passwords')  renderPwList();
+  if (name === 'memo')       loadMyMemos();
+  if (name === 'allmemos')   loadAllMemos();
 };
 
 // -- Priority -------------------------------------------
@@ -1273,32 +1320,42 @@ async function getNextMemoNumber(unit) {
   return count;
 }
 
-// -- Memo -----------------------------------------------
-window.generateMemo = async function() {
-  const subjectV = document.getElementById('memoSubject').value;
-  const bodyV    = document.getElementById('memoBody').value;
-  if (!subjectV || !bodyV) { showToast("Please fill in Subject and Memo body", true); return; }
+// -- Current memo being previewed (held in memory until submitted) --
+let currentMemoData = null;
 
-  const fromUnit = document.getElementById('memoFrom').value || currentUser;
+// -- Memo generate --------------------------------------
+window.generateMemo = async function() {
+  const subjectV = document.getElementById('memoSubject').value.trim();
+  const bodyV    = document.getElementById('memoBody').value.trim();
+  if (!subjectV) { showToast("Please enter a Subject / Title", true); return; }
+  if (!bodyV)    { showToast("Please write the Memo Body", true); return; }
+
+  const fromUnit = currentUser;
   const dateV    = document.getElementById('memoDate').value;
   const year     = dateV ? new Date(dateV).getFullYear() : new Date().getFullYear();
   const abbr     = UNIT_ABBR[fromUnit] || fromUnit.substring(0,3).toUpperCase();
+  const toV      = document.getElementById('memoTo').value || 'Maintenance Unit';
 
-  // Auto-generate reference if not manually set
+  // Only generate a new ref number if we don't already have one for this draft
   let refV = document.getElementById('memoRef').value.trim();
   if (!refV) {
     const num = await getNextMemoNumber(fromUnit);
-    refV = `TUH/${abbr}/${year}/${String(num).padStart(3,'0')}`;
+    refV = 'TUH/' + abbr + '/' + year + '/' + String(num).padStart(3,'0');
     document.getElementById('memoRef').value = refV;
   }
 
   const formattedDate = dateV
-    ? new Date(dateV).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})
-    : '--';
-  const toV = document.getElementById('memoTo').value;
+    ? new Date(dateV).toLocaleDateString('en-GB', {day:'2-digit', month:'long', year:'numeric'})
+    : new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'long', year:'numeric'});
 
-  // Populate BOTH copies
-  // Populate memo fields
+  // Save to memory for submitMemo()
+  currentMemoData = {
+    unit: fromUnit, toUnit: toV, date: dateV || new Date().toISOString().split('T')[0],
+    ref: refV, subject: subjectV, body: bodyV,
+    submittedAt: null
+  };
+
+  // Populate preview
   document.getElementById('pMemoDate').textContent    = formattedDate;
   document.getElementById('pMemoRef').textContent     = refV;
   document.getElementById('pMemoFrom').textContent    = fromUnit;
@@ -1308,7 +1365,160 @@ window.generateMemo = async function() {
 
   document.getElementById('memoPrint').style.display = 'block';
   document.getElementById('memoPrint').scrollIntoView({ behavior: 'smooth' });
-  showToast('Memo generated -- Ref: ' + refV);
+  showToast('Memo preview ready -- Ref: ' + refV);
+};
+
+window.closeMemoPreview = function() {
+  document.getElementById('memoPrint').style.display = 'none';
+};
+
+// -- Submit memo to Firebase ----------------------------
+window.submitMemo = async function() {
+  if (!currentMemoData) { showToast("Please generate a memo first", true); return; }
+  currentMemoData.submittedAt = new Date().toISOString();
+
+  try {
+    if (db) {
+      await addDoc(collection(db, 'memos'), currentMemoData);
+    } else {
+      const stored = JSON.parse(localStorage.getItem('tuh_memos') || '[]');
+      currentMemoData.id = 'local_' + Date.now();
+      stored.push(currentMemoData);
+      localStorage.setItem('tuh_memos', JSON.stringify(stored));
+    }
+    showToast('[OK] Memo submitted -- Ref: ' + currentMemoData.ref);
+    // Clear the form for next memo
+    document.getElementById('memoSubject').value = '';
+    document.getElementById('memoBody').value = '';
+    document.getElementById('memoRef').value = '';
+    document.getElementById('memoPrint').style.display = 'none';
+    currentMemoData = null;
+    loadMyMemos();
+  } catch(e) {
+    showToast("Error submitting memo: " + e.message, true);
+  }
+};
+
+// -- Load this unit's submitted memos -------------------
+window.loadMyMemos = async function() {
+  const el = document.getElementById('myMemosList');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading memos...</div>';
+  let memos = [];
+  try {
+    if (db) {
+      const q = query(collection(db, 'memos'), where('unit', '==', currentUser));
+      const snap = await getDocs(q);
+      memos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      memos.sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
+    } else {
+      const all = JSON.parse(localStorage.getItem('tuh_memos') || '[]');
+      memos = all.filter(m => m.unit === currentUser).reverse();
+    }
+  } catch(e) {
+    console.error("loadMyMemos:", e.message);
+  }
+
+  if (!memos.length) {
+    el.innerHTML = '<div class="empty-state"><p>No memos submitted yet from your unit.</p></div>';
+    return;
+  }
+  el.innerHTML = '<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Date</th><th>Ref No.</th><th>Subject</th><th>To</th><th>Submitted</th></tr></thead><tbody>' +
+    memos.map((m, i) => '<tr>' +
+      '<td>' + (i+1) + '</td>' +
+      '<td>' + (m.date || '--') + '</td>' +
+      '<td style="font-weight:600;color:var(--green-700)">' + (m.ref || '--') + '</td>' +
+      '<td>' + (m.subject || '--') + '</td>' +
+      '<td>' + (m.toUnit || '--') + '</td>' +
+      '<td>' + (m.submittedAt ? new Date(m.submittedAt).toLocaleDateString('en-GB') : '--') + '</td>' +
+    '</tr>').join('') +
+    '</tbody></table></div>';
+};
+
+// -- Admin: load ALL memos ------------------------------
+window.loadAllMemos = async function() {
+  let memos = [];
+  try {
+    if (db) {
+      const snap = await getDocs(collection(db, 'memos'));
+      memos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      memos.sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
+    } else {
+      memos = JSON.parse(localStorage.getItem('tuh_memos') || '[]').reverse();
+    }
+  } catch(e) {
+    console.error("loadAllMemos:", e.message);
+  }
+  window._allMemos = memos;
+  // Populate unit filter dropdown
+  const sel = document.getElementById('memoUnitFilter');
+  if (sel) {
+    const units = [...new Set(memos.map(m => m.unit))].sort();
+    sel.innerHTML = '<option value="">All Units</option>' +
+      units.map(u => '<option value="' + u + '">' + u + '</option>').join('');
+  }
+  renderAllMemos();
+};
+
+window.renderAllMemos = function() {
+  const memos = window._allMemos || [];
+  const search = (document.getElementById('memoSearch')?.value || '').toLowerCase();
+  const unit   = document.getElementById('memoUnitFilter')?.value || '';
+  const filtered = memos.filter(m => {
+    if (unit && m.unit !== unit) return false;
+    if (search && !(m.unit + ' ' + m.ref + ' ' + m.subject).toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const tbody  = document.getElementById('allMemosBody');
+  const noMsg  = document.getElementById('noMemosMsg');
+  if (!filtered.length) { tbody.innerHTML = ''; noMsg.style.display = 'block'; return; }
+  noMsg.style.display = 'none';
+
+  tbody.innerHTML = filtered.map((m, i) =>
+    '<tr>' +
+    '<td>' + (i+1) + '</td>' +
+    '<td>' + (m.date || '--') + '</td>' +
+    '<td style="font-weight:600;color:var(--green-700)">' + (m.ref || '--') + '</td>' +
+    '<td>' + (m.unit || '--') + '</td>' +
+    '<td>' + (m.toUnit || '--') + '</td>' +
+    '<td>' + (m.subject || '--') + '</td>' +
+    '<td>' + (m.submittedAt ? new Date(m.submittedAt).toLocaleDateString('en-GB') : '--') + '</td>' +
+    '<td><button class="pw-save-btn" onclick="viewMemoDetail(' + "'" + m.id + "'" + ')">View</button></td>' +
+    '</tr>'
+  ).join('');
+};
+
+window.viewMemoDetail = function(id) {
+  const m = (window._allMemos || []).find(x => x.id === id);
+  if (!m) return;
+  const d = new Date(m.date).toLocaleDateString('en-GB', {day:'2-digit',month:'long',year:'numeric'});
+  document.getElementById('pMemoDate').textContent    = d;
+  document.getElementById('pMemoRef').textContent     = m.ref || '--';
+  document.getElementById('pMemoFrom').textContent    = m.unit || '--';
+  document.getElementById('pMemoTo').textContent      = m.toUnit || '--';
+  document.getElementById('pMemoSubject').textContent = (m.subject || '--').toUpperCase();
+  document.getElementById('pMemoBody').textContent    = m.body || '--';
+  // Clear sig fields
+  ['sigReqName','sigReqRole','sigReqPhone','sigAppName','sigAppRole','sigAppPhone'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('memoPrint').style.display = 'block';
+  document.getElementById('memoPrint').scrollIntoView({ behavior: 'smooth' });
+  switchTab('allmemos');
+};
+
+window.exportMemosExcel = function() {
+  const memos = window._allMemos || [];
+  if (!memos.length) { showToast("No memos to export", true); return; }
+  const rows = [['Date','Ref No.','From Unit','To','Subject','Body','Submitted At']];
+  memos.forEach(m => rows.push([m.date||'', m.ref||'', m.unit||'', m.toUnit||'', m.subject||'', m.body||'', m.submittedAt ? new Date(m.submittedAt).toLocaleDateString('en-GB') : '']));
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [12,20,22,18,30,40,14].map(wch => ({wch}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'All Memos');
+  XLSX.writeFile(wb, 'TUH_Memos_' + new Date().toISOString().split('T')[0] + '.xlsx');
+  showToast('Memos exported to Excel');
 };
 
 // -- Password Management --------------------------------
@@ -1397,6 +1607,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('rptDate').value  = today;
   document.getElementById('memoDate').value = today;
 });
+
+// Helper: populate memoFrom when user logs in (called from doLogin)
+function setMemoFromUnit(unit) {
+  const el = document.getElementById('memoFrom');
+  if (el) { el.value = unit; }
+}
 </script>
 </body>
 </html>
