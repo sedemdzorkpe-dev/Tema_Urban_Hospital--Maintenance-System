@@ -814,7 +814,7 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
 ══════════════════════════════════════════════════════ -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, updateDoc, doc, query, orderBy, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, doc, query, orderBy, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCJcGLF0hh3Wp_XVYmit9Vouzuh2CQgLzg",
@@ -1637,8 +1637,7 @@ window.clearResolvedReports = function() {
       for (const r of resolved) {
         try {
           if (db && r.id && !r.id.startsWith('local_')) {
-            const { deleteDoc, doc: docRef } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-            await deleteDoc(docRef(db, 'reports', r.id));
+            await deleteDoc(doc(db, 'reports', r.id));
           }
           deleted++;
         } catch(e) { console.error('Delete error:', e.message); }
@@ -1667,8 +1666,7 @@ window.clearAllMemos = function() {
       for (const m of memos) {
         try {
           if (db && m.id && !m.id.startsWith('local_')) {
-            const { deleteDoc, doc: docRef } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-            await deleteDoc(docRef(db, 'memos', m.id));
+            await deleteDoc(doc(db, 'memos', m.id));
           }
           deleted++;
         } catch(e) { console.error('Delete memo error:', e.message); }
