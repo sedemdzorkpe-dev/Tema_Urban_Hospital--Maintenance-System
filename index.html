@@ -951,15 +951,17 @@ window.submitReport = async function() {
   const name = document.getElementById('rptName').value.trim();
   if (!name) { showToast("Please enter your name", true); return; }
 
+  // Give every fault item its own independent status
+  const faultsWithStatus = faults.map(f => ({ ...f, status: 'Pending' }));
+
   const report = {
     unit:      currentUser,
     date:      document.getElementById('rptDate').value,
     reporter:  name,
     phone:     document.getElementById('rptPhone').value.trim(),
     priority:  selectedPriority || 'medium',
-    faults,
+    faults:    faultsWithStatus,
     notes:     document.getElementById('rptNotes').value.trim(),
-    status:    'Pending',
     createdAt: new Date().toISOString()
   };
 
@@ -1049,13 +1051,15 @@ window.loadMyReports = async function() {
   let rowNum = 1;
   mine.forEach(r => {
     (r.faults || []).forEach(f => {
+      // Per-item status   fall back to report-level for old records
+      const itemStatus = f.status || r.status || 'Pending';
       rows += `<tr>
         <td>${rowNum++}</td>
         <td>${r.date || '--'}</td>
         <td>${capFirst(f.category)}</td>
         <td>${f.item}</td>
         <td><span class="badge badge-${r.priority || 'medium'}">${capFirst(r.priority || 'medium')}</span></td>
-        <td><span class="badge badge-${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
+        <td><span class="badge badge-${statusClass(itemStatus)}">${itemStatus}</span></td>
       </tr>`;
     });
   });
@@ -1071,14 +1075,15 @@ window.renderAllReports = function() {
   const status = document.getElementById('filterStatus')?.value || '';
   const cat    = document.getElementById('filterCat')?.value || '';
 
-  // Flatten: one row per fault
+  // Flatten: one row per fault item, include fault index (fi)
   let rows = [];
   allReports.forEach(r => {
-    (r.faults || []).forEach(f => {
+    (r.faults || []).forEach((f, fi) => {
+      const itemStatus = f.status || r.status || 'Pending';
       if (search && !(r.unit + ' ' + f.category + ' ' + f.item + ' ' + (r.reporter||'')).toLowerCase().includes(search)) return;
-      if (status && r.status !== status) return;
+      if (status && itemStatus !== status) return;
       if (cat && f.category !== cat) return;
-      rows.push({ r, f });
+      rows.push({ r, f, fi });
     });
   });
 
@@ -1087,8 +1092,10 @@ window.renderAllReports = function() {
   if (!rows.length) { tbody.innerHTML = ''; noMsg.style.display = 'block'; return; }
   noMsg.style.display = 'none';
 
-  tbody.innerHTML = rows.map(({ r, f }, i) => `
-    <tr>
+  tbody.innerHTML = rows.map(({ r, f, fi }, i) => {
+    // Use fault-level status if available, fall back to report-level for old records
+    const itemStatus = f.status || r.status || 'Pending';
+    return `<tr>
       <td>${i + 1}</td>
       <td>${r.date || '--'}</td>
       <td>${r.unit || '--'}</td>
@@ -1097,31 +1104,57 @@ window.renderAllReports = function() {
       <td>${r.reporter || '--'}</td>
       <td>${r.phone || '--'}</td>
       <td><span class="badge badge-${r.priority || 'medium'}">${capFirst(r.priority || 'medium')}</span></td>
-      <td><span class="badge badge-${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
-      <td><select onchange="updateStatus('${r.id}',this.value)" style="font-size:.78rem;padding:3px 6px;border:1px solid var(--gray-300);border-radius:4px;font-family:'Inter',sans-serif;">
-        <option ${r.status === 'Pending' ? 'selected' : ''}>Pending</option>
-        <option ${r.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
-        <option ${r.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+      <td><span class="badge badge-${statusClass(itemStatus)}">${itemStatus}</span></td>
+      <td><select data-rid="${r.id}" data-fi="${fi}" onchange="updateItemStatus(this)" style="font-size:.78rem;padding:3px 6px;border:1px solid var(--gray-300);border-radius:4px;font-family:'Inter',sans-serif;">
+        <option ${itemStatus === 'Pending' ? 'selected' : ''}>Pending</option>
+        <option ${itemStatus === 'In Progress' ? 'selected' : ''}>In Progress</option>
+        <option ${itemStatus === 'Resolved' ? 'selected' : ''}>Resolved</option>
       </select></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 };
 
-window.updateStatus = async function(id, status) {
-  // Update in allReports array
-  const r = allReports.find(x => x.id === id);
-  if (r) r.status = status;
-  // Update Firebase
-  if (db && id && !id.startsWith('local_')) {
-    try { await updateDoc(doc(db, 'reports', id), { status }); } catch(e) { console.error('updateStatus:', e.message); }
+// Per-item status update   changes only the specific fault item, not the whole report
+window.updateItemStatus = async function(sel) {
+  const rid    = sel.getAttribute('data-rid');
+  const fi     = parseInt(sel.getAttribute('data-fi'));
+  const status = sel.value;
+
+  // Update in memory
+  const r = allReports.find(x => x.id === rid);
+  if (!r || !r.faults || !r.faults[fi]) return;
+  r.faults[fi].status = status;
+
+  // Update Firebase   save the entire faults array with updated item status
+  if (db && rid && !rid.startsWith('local_')) {
+    try {
+      await updateDoc(doc(db, 'reports', rid), { faults: r.faults });
+    } catch(e) { console.error('updateItemStatus Firebase:', e.message); }
   }
+
   // Update localStorage fallback
   const stored = JSON.parse(localStorage.getItem('tuh_reports') || '[]');
-  const idx = stored.findIndex(x => x.id === id);
-  if (idx >= 0) { stored[idx].status = status; localStorage.setItem('tuh_reports', JSON.stringify(stored)); }
+  const idx = stored.findIndex(x => x.id === rid);
+  if (idx >= 0) {
+    if (!stored[idx].faults) stored[idx].faults = r.faults;
+    else stored[idx].faults[fi] = { ...stored[idx].faults[fi], status };
+    localStorage.setItem('tuh_reports', JSON.stringify(stored));
+  }
 
   renderAllReports();
   renderDashboard();
-  showToast("Status updated to: " + status);
+  showToast('Item status updated to: ' + status);
+};
+
+// Legacy support   kept so old data using report-level status still works
+window.updateStatus = async function(id, status) {
+  const r = allReports.find(x => x.id === id);
+  if (r) r.status = status;
+  if (db && id && !id.startsWith('local_')) {
+    try { await updateDoc(doc(db, 'reports', id), { status }); } catch(e) {}
+  }
+  renderAllReports();
+  renderDashboard();
 };
 
 // -- Dashboard ------------------------------------------
@@ -1667,11 +1700,15 @@ document.addEventListener('click', function(e) {
 
 // -- Clear all Resolved reports -----------------------
 window.clearResolvedReports = function() {
-  const resolved = allReports.filter(r => r.status === 'Resolved');
-  if (!resolved.length) { showToast('No resolved reports to clear', true); return; }
+  // A report is fully resolved only when ALL its fault items are Resolved
+  const resolved = allReports.filter(r =>
+    r.faults && r.faults.length > 0 &&
+    r.faults.every(f => (f.status || r.status || 'Pending') === 'Resolved')
+  );
+  if (!resolved.length) { showToast('No fully resolved reports to clear. All fault items in a report must be Resolved first.', true); return; }
   showConfirm(
-    'Clear Resolved Reports',
-    'This will permanently delete all ' + resolved.length + ' resolved report(s). Export to Excel first to keep a record. Continue?',
+    'Clear Fully Resolved Reports',
+    'This will permanently delete ' + resolved.length + ' report(s) where ALL fault items are Resolved. Export to Excel first. Continue?',
     async function() {
       let deleted = 0;
       for (const r of resolved) {
