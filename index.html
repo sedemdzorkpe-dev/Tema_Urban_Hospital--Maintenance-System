@@ -285,11 +285,21 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
 .loading { text-align:center; padding:30px; color:var(--gray-500); font-size:.9rem; }
 
 @media print {
+  @page { size: A5 landscape; margin: 6mm; }
   body * { visibility: hidden; }
   #memoPrint, #memoPrint * { visibility: visible; }
-  #memoPrint { position: fixed; inset: 0; width: 100%; }
+  #memoPrint {
+    position: fixed; inset: 0; width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 4mm;
+  }
+  .memo-copy { page-break-inside: avoid; }
+  .memo-copy-divider { border-left: 1px dashed #999; }
   .memo-actions { display: none !important; }
+  .memo-print-label { display: block !important; }
 }
+.memo-print-label { display: none; font-size: .7rem; text-align: center; color: #999; padding: 2px 0; font-style: italic; }
 @media (max-width: 480px) {
   .topbar-title span { display: none; }
   .page-content { padding: 16px 14px; }
@@ -359,7 +369,7 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
     </div>
     <button class="btn-primary" onclick="doLogin()">🔐 Sign In</button>
   </div>
-  <div class="login-footer">© 2024 Tema Urban Hospital · Maintenance Department</div>
+  <div class="login-footer">© 2026 Tema Urban Hospital · Maintenance Department</div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════
@@ -497,7 +507,7 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
         <div class="form-group"><label>FROM Unit</label><input type="text" id="memoFrom" placeholder="Unit sending memo"></div>
         <div class="form-group"><label>TO Unit</label><input type="text" id="memoTo" value="Maintenance Unit"></div>
         <div class="form-group"><label>Memo Date</label><input type="date" id="memoDate"></div>
-        <div class="form-group"><label>Reference No.</label><input type="text" id="memoRef" placeholder="e.g. TUH/MAINT/2024/001"></div>
+        <div class="form-group"><label>Reference No. <span style="font-size:.75rem;color:var(--green-600);font-weight:400">(auto-generated)</span></label><input type="text" id="memoRef" readonly style="background:var(--green-50);color:var(--green-800);font-weight:600" placeholder="Auto-generated on preview"></div>
       </div>
       <div class="form-group"><label>Subject / Title of Memo</label><input type="text" id="memoSubject" placeholder="e.g. Request for Electrical Repairs in Laboratory"></div>
       <div class="section-label">Memo Body</div>
@@ -505,42 +515,83 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
       <button class="btn-primary" onclick="generateMemo()" style="margin-bottom:16px">📝 Generate Memo Preview</button>
     </div>
     <div id="memoPrint" style="display:none">
-      <div class="memo-hospital-header">
-        <div class="mh-logo">
-          <svg viewBox="0 0 60 60" fill="none"><rect x="10" y="28" width="40" height="22" rx="2" fill="#065f46"/><rect x="18" y="20" width="24" height="10" rx="1" fill="#047857"/><rect x="26" y="32" width="8" height="10" rx="1" fill="white"/><rect x="28" y="4" width="4" height="12" rx="1" fill="#f59e0b"/><rect x="24" y="8" width="12" height="4" rx="1" fill="#f59e0b"/></svg>
+      <div style="display:flex;gap:16px;align-items:flex-start">
+        <!-- COPY 1 (Maintenance Office) -->
+      <div class="memo-copy" style="flex:1;min-width:0">
+        <div class="memo-hospital-header">
+          <div class="mh-logo"><svg viewBox="0 0 60 60" fill="none"><rect x="10" y="28" width="40" height="22" rx="2" fill="#065f46"/><rect x="18" y="20" width="24" height="10" rx="1" fill="#047857"/><rect x="26" y="32" width="8" height="10" rx="1" fill="white"/><rect x="28" y="4" width="4" height="12" rx="1" fill="#f59e0b"/><rect x="24" y="8" width="12" height="4" rx="1" fill="#f59e0b"/></svg></div>
+          <h2>Tema Urban Hospital</h2>
+          <p>P.O. Box CO 2380, Tema, Greater Accra — Ghana Health Service</p>
         </div>
-        <h2>Tema Urban Hospital</h2>
-        <p>P.O. Box CO 2380, Tema, Greater Accra — Ghana Health Service</p>
+        <div class="memo-title-bar">INTER-DEPARTMENTAL MEMORANDUM</div>
+        <div class="memo-routing">
+          <table>
+            <tr><td>DATE:</td><td id="pMemoDate">—</td></tr>
+            <tr><td>REF:</td><td id="pMemoRef">—</td></tr>
+            <tr><td>FROM:</td><td id="pMemoFrom">—</td></tr>
+            <tr><td>TO:</td><td id="pMemoTo">—</td></tr>
+            <tr><td>SUBJECT:</td><td id="pMemoSubject" style="font-weight:bold;text-transform:uppercase">—</td></tr>
+          </table>
+        </div>
+        <div class="memo-body-area" id="pMemoBody">—</div>
+        <div class="sig-row">
+          <div class="sig-box">
+            <div class="sig-label">Requested by (Staff):</div>
+            <input type="text" placeholder="Full Name" id="sigReqName">
+            <input type="text" placeholder="Designation / Role" id="sigReqRole">
+            <input type="tel" placeholder="Phone Number" id="sigReqPhone">
+            <div style="margin-top:10px;border-top:1px solid #999;padding-top:3px;font-size:.72rem;color:#666;">Signature &amp; Date</div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-label">Approved by (Head of Unit):</div>
+            <input type="text" placeholder="Full Name" id="sigAppName">
+            <input type="text" placeholder="Designation / Role" id="sigAppRole">
+            <input type="tel" placeholder="Phone Number" id="sigAppPhone">
+            <div style="margin-top:10px;border-top:1px solid #999;padding-top:3px;font-size:.72rem;color:#666;">Signature &amp; Date</div>
+          </div>
+        </div>
+        <div class="memo-print-label">MAINTENANCE OFFICE COPY</div>
       </div>
-      <div class="memo-title-bar">INTER-DEPARTMENTAL MEMORANDUM</div>
-      <div class="memo-routing">
-        <table>
-          <tr><td>DATE:</td><td id="pMemoDate">—</td></tr>
-          <tr><td>REF:</td><td id="pMemoRef">—</td></tr>
-          <tr><td>FROM:</td><td id="pMemoFrom">—</td></tr>
-          <tr><td>TO:</td><td id="pMemoTo">—</td></tr>
-          <tr><td>SUBJECT:</td><td id="pMemoSubject" style="font-weight:bold;text-transform:uppercase">—</td></tr>
-        </table>
+        <div style="width:1px;background:repeating-linear-gradient(to bottom,#ccc 0,#ccc 6px,transparent 6px,transparent 12px);align-self:stretch;flex-shrink:0"></div>
+        <!-- COPY 2 (Requesting Unit) -->
+      <div class="memo-copy memo-copy-divider" style="flex:1;min-width:0;padding-left:8px">
+        <div class="memo-hospital-header">
+          <div class="mh-logo"><svg viewBox="0 0 60 60" fill="none"><rect x="10" y="28" width="40" height="22" rx="2" fill="#065f46"/><rect x="18" y="20" width="24" height="10" rx="1" fill="#047857"/><rect x="26" y="32" width="8" height="10" rx="1" fill="white"/><rect x="28" y="4" width="4" height="12" rx="1" fill="#f59e0b"/><rect x="24" y="8" width="12" height="4" rx="1" fill="#f59e0b"/></svg></div>
+          <h2>Tema Urban Hospital</h2>
+          <p>P.O. Box CO 2380, Tema, Greater Accra — Ghana Health Service</p>
+        </div>
+        <div class="memo-title-bar">INTER-DEPARTMENTAL MEMORANDUM</div>
+        <div class="memo-routing">
+          <table>
+            <tr><td>DATE:</td><td id="pMemoDate2">—</td></tr>
+            <tr><td>REF:</td><td id="pMemoRef2">—</td></tr>
+            <tr><td>FROM:</td><td id="pMemoFrom2">—</td></tr>
+            <tr><td>TO:</td><td id="pMemoTo2">—</td></tr>
+            <tr><td>SUBJECT:</td><td id="pMemoSubject2" style="font-weight:bold;text-transform:uppercase">—</td></tr>
+          </table>
+        </div>
+        <div class="memo-body-area" id="pMemoBody2">—</div>
+        <div class="sig-row">
+          <div class="sig-box">
+            <div class="sig-label">Requested by (Staff):</div>
+            <input type="text" placeholder="Full Name" id="sigReqName2">
+            <input type="text" placeholder="Designation / Role" id="sigReqRole2">
+            <input type="tel" placeholder="Phone Number" id="sigReqPhone2">
+            <div style="margin-top:10px;border-top:1px solid #999;padding-top:3px;font-size:.72rem;color:#666;">Signature &amp; Date</div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-label">Approved by (Head of Unit):</div>
+            <input type="text" placeholder="Full Name" id="sigAppName2">
+            <input type="text" placeholder="Designation / Role" id="sigAppRole2">
+            <input type="tel" placeholder="Phone Number" id="sigAppPhone2">
+            <div style="margin-top:10px;border-top:1px solid #999;padding-top:3px;font-size:.72rem;color:#666;">Signature &amp; Date</div>
+          </div>
+        </div>
+        <div class="memo-print-label">REQUESTING UNIT COPY</div>
       </div>
-      <div class="memo-body-area" id="pMemoBody">—</div>
-      <div class="sig-row">
-        <div class="sig-box">
-          <div class="sig-label">Requested by (Staff):</div>
-          <input type="text" placeholder="Full Name" id="sigReqName">
-          <input type="text" placeholder="Designation / Role" id="sigReqRole">
-          <input type="tel" placeholder="Phone Number" id="sigReqPhone">
-          <div style="margin-top:12px;border-top:1px solid #999;padding-top:4px;font-size:.78rem;color:#666;">Signature &amp; Date</div>
-        </div>
-        <div class="sig-box">
-          <div class="sig-label">Approved by (Head of Unit):</div>
-          <input type="text" placeholder="Full Name" id="sigAppName">
-          <input type="text" placeholder="Designation / Role" id="sigAppRole">
-          <input type="tel" placeholder="Phone Number" id="sigAppPhone">
-          <div style="margin-top:12px;border-top:1px solid #999;padding-top:4px;font-size:.78rem;color:#666;">Signature &amp; Date</div>
-        </div>
       </div>
       <div class="memo-actions">
-        <button class="btn-secondary" onclick="window.print()">🖨️ Print Memo</button>
+        <button class="btn-secondary" onclick="window.print()">🖨️ Print Memo (A5 × 2 copies)</button>
         <button class="btn-secondary" onclick="document.getElementById('memoPrint').style.display='none'">✕ Close Preview</button>
       </div>
     </div>
@@ -602,10 +653,14 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
         <div class="card-header">
           <div class="card-title">
             <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></div>
-            Faults by Category
+            Fault Items by Category
           </div>
         </div>
         <div id="catChart" class="chart-bar-wrap"></div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--gray-100)">
+          <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green-700);margin-bottom:12px">Status breakdown per category</div>
+          <div id="catStatusChart"></div>
+        </div>
       </div>
 
       <!-- UNIT CHART -->
@@ -1035,58 +1090,75 @@ window.renderDashboard = function() {
   else if (period === 'custom') from = new Date(document.getElementById('dashFrom')?.value || from);
   const toDate = period === 'custom' ? new Date(document.getElementById('dashTo')?.value || now) : now;
 
-  // Filter reports to period — use date field first, fallback to createdAt string
   const inRange = allReports.filter(r => {
     const raw = r.date || (typeof r.createdAt === 'string' ? r.createdAt : null);
-    if (!raw) return true; // include if no date
+    if (!raw) return true;
     const d = new Date(raw);
     return d >= from && d <= toDate;
   });
 
-  // ── Correct counts: per REPORT not per fault ──
+  // ── FLATTEN to individual fault items — each item carries the report status ──
+  // Each item = { category, item, status, priority, unit, date }
+  const allItems = [];
+  inRange.forEach(r => {
+    (r.faults || []).forEach(f => {
+      allItems.push({
+        category: f.category,
+        item:     f.item,
+        // Each fault item inherits the report-level status & priority
+        // (Admin can set per-item status via All Reports table)
+        status:   f.status || r.status || 'Pending',
+        priority: r.priority || 'medium',
+        unit:     r.unit,
+        date:     r.date
+      });
+    });
+  });
+
   const totalReports  = inRange.length;
-  const totalFaults   = inRange.reduce((s, r) => s + (r.faults || []).length, 0);
-  const pendingCount  = inRange.filter(r => r.status === 'Pending').length;
-  const progressCount = inRange.filter(r => r.status === 'In Progress').length;
-  const resolvedCount = inRange.filter(r => r.status === 'Resolved').length;
-  const urgentCount   = inRange.filter(r => r.priority === 'high').length;
+  const totalItems    = allItems.length;
+  const pendingItems  = allItems.filter(i => i.status === 'Pending').length;
+  const progressItems = allItems.filter(i => i.status === 'In Progress').length;
+  const resolvedItems = allItems.filter(i => i.status === 'Resolved').length;
+  const urgentItems   = allItems.filter(i => i.priority === 'high').length;
 
   const periodLabel = period === 'month' ? 'This Month'
     : period === 'half' ? 'Last 6 Months'
     : period === 'year' ? 'This Year' : 'Custom Range';
   document.getElementById('statusPeriodLabel').textContent = periodLabel;
 
-  // ── Stat cards ──
+  // ── Stat cards — all based on ITEMS ──
   document.getElementById('dashStats').innerHTML = `
     <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-val green">${totalReports}</div><div class="stat-lbl">Total Reports</div></div>
-    <div class="stat-card"><div class="stat-icon">🔩</div><div class="stat-val teal">${totalFaults}</div><div class="stat-lbl">Total Fault Items</div></div>
-    <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-val orange">${pendingCount}</div><div class="stat-lbl">Pending</div></div>
-    <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-val blue">${progressCount}</div><div class="stat-lbl">In Progress</div></div>
-    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-val green">${resolvedCount}</div><div class="stat-lbl">Resolved</div></div>
-    <div class="stat-card"><div class="stat-icon">🔴</div><div class="stat-val red">${urgentCount}</div><div class="stat-lbl">Urgent</div></div>
+    <div class="stat-card"><div class="stat-icon">🔩</div><div class="stat-val teal">${totalItems}</div><div class="stat-lbl">Total Fault Items</div></div>
+    <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-val orange">${pendingItems}</div><div class="stat-lbl">Items Pending</div></div>
+    <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-val blue">${progressItems}</div><div class="stat-lbl">Items In Progress</div></div>
+    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-val green">${resolvedItems}</div><div class="stat-lbl">Items Resolved</div></div>
+    <div class="stat-card"><div class="stat-icon">🔴</div><div class="stat-val red">${urgentItems}</div><div class="stat-lbl">Urgent Items</div></div>
   `;
 
-  // ── Status breakdown bar chart ──
-  const maxStatus = Math.max(pendingCount, progressCount, resolvedCount, 1);
+  // ── Status breakdown bar chart — per ITEM ──
+  const maxStatus = Math.max(pendingItems, progressItems, resolvedItems, 1);
+  const resolveRate = totalItems > 0 ? Math.round(resolvedItems / totalItems * 100) : 0;
   document.getElementById('statusChart').innerHTML = [
-    { label: '⏳ Pending',     val: pendingCount,  cls: 'bar-orange' },
-    { label: '🔧 In Progress', val: progressCount, cls: 'bar-blue'   },
-    { label: '✅ Resolved',    val: resolvedCount, cls: 'bar-green'  },
+    { label: '⏳ Pending',     val: pendingItems,  cls: 'bar-orange' },
+    { label: '🔧 In Progress', val: progressItems, cls: 'bar-blue'   },
+    { label: '✅ Resolved',    val: resolvedItems, cls: 'bar-green'  },
   ].map(({ label, val, cls }) => {
     const pct = Math.round(val / maxStatus * 100);
-    const resolveRate = totalReports > 0 ? Math.round(resolvedCount / totalReports * 100) : 0;
+    const pctOfTotal = totalItems > 0 ? Math.round(val / totalItems * 100) : 0;
     return `<div class="chart-bar-row">
       <div class="chart-bar-label">${label}</div>
       <div class="chart-bar-track"><div class="chart-bar-fill ${cls}" style="width:${pct}%"><span>${val}</span></div></div>
-      <div style="font-size:.75rem;color:var(--gray-500);width:36px;text-align:right">${totalReports > 0 ? Math.round(val/totalReports*100) : 0}%</div>
+      <div style="font-size:.75rem;color:var(--gray-500);width:40px;text-align:right">${pctOfTotal}%</div>
     </div>`;
   }).join('') + `<div style="margin-top:10px;font-size:.8rem;color:var(--green-700);font-weight:600">
-    Resolution rate: ${totalReports > 0 ? Math.round(resolvedCount/totalReports*100) : 0}% of ${totalReports} report(s)
+    Item resolution rate: ${resolveRate}% &nbsp;·&nbsp; ${resolvedItems} of ${totalItems} fault items resolved
   </div>`;
 
-  // ── Category chart ──
+  // ── Category chart — per ITEM ──
   const catCount = {};
-  inRange.forEach(r => (r.faults || []).forEach(f => { catCount[f.category] = (catCount[f.category] || 0) + 1; }));
+  allItems.forEach(i => { catCount[i.category] = (catCount[i.category] || 0) + 1; });
   const maxCat = Math.max(...Object.values(catCount), 1);
   const catColors = { electrical:'bar-orange', plumbing:'bar-blue', ac:'bar-teal', carpentry:'bar-purple', glazing:'bar-green', renovation:'bar-red' };
   const catLabels = { electrical:'⚡ Electrical', plumbing:'🚿 Plumbing', ac:'❄️ A/C', carpentry:'🪚 Carpentry', glazing:'🪟 Glazing', renovation:'🏗️ Renovation' };
@@ -1100,34 +1172,59 @@ window.renderDashboard = function() {
     </div>`;
   }).join('');
 
-  // ── Unit chart ──
+  // ── Status per category (stacked view) ──
+  const catStatusEl = document.getElementById('catStatusChart');
+  if (catStatusEl) {
+    catStatusEl.innerHTML = Object.entries(catLabels).map(([k, lbl]) => {
+      const catItems = allItems.filter(i => i.category === k);
+      if (!catItems.length) return '';
+      const p = catItems.filter(i => i.status === 'Pending').length;
+      const g = catItems.filter(i => i.status === 'In Progress').length;
+      const r = catItems.filter(i => i.status === 'Resolved').length;
+      return `<div style="margin-bottom:14px">
+        <div style="font-size:.82rem;font-weight:600;color:var(--gray-700);margin-bottom:5px">${lbl} — ${catItems.length} item(s)</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge badge-pending">⏳ ${p} Pending</span>
+          <span class="badge badge-progress">🔧 ${g} In Progress</span>
+          <span class="badge badge-done">✅ ${r} Resolved</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Unit chart — per ITEM ──
   const unitCount = {};
-  inRange.forEach(r => { unitCount[r.unit] = (unitCount[r.unit] || 0) + (r.faults || []).length; });
+  allItems.forEach(i => { unitCount[i.unit] = (unitCount[i.unit] || 0) + 1; });
   const topUnits = Object.entries(unitCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
   const maxUnit = Math.max(...topUnits.map(u => u[1]), 1);
   document.getElementById('unitChart').innerHTML = topUnits.length
     ? topUnits.map(([u, v]) => {
         const pct = Math.round(v / maxUnit * 100);
+        // Show resolved vs pending for each unit
+        const uItems = allItems.filter(i => i.unit === u);
+        const uRes = uItems.filter(i => i.status === 'Resolved').length;
         return `<div class="chart-bar-row">
           <div class="chart-bar-label">${u}</div>
           <div class="chart-bar-track"><div class="chart-bar-fill bar-green" style="width:${pct}%"><span>${v}</span></div></div>
-          <div style="font-size:.75rem;color:var(--gray-500);width:36px;text-align:right">${v}</div>
+          <div style="font-size:.7rem;color:var(--gray-500);width:70px;text-align:right">${uRes}/${v} done</div>
         </div>`;
       }).join('')
     : '<p style="padding:12px;color:var(--gray-500);font-size:.85rem">No data for selected period.</p>';
 
   // ── Top procurement items ──
   const itemCount = {};
-  inRange.forEach(r => (r.faults || []).forEach(f => { itemCount[f.item] = (itemCount[f.item] || 0) + 1; }));
-  const topItems = Object.entries(itemCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
-  document.getElementById('topItems').innerHTML = topItems.length
-    ? topItems.map(([item, cnt], i) => `
-        <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--gray-100)">
-          <span style="width:24px;height:24px;background:var(--green-50);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--green-800);flex-shrink:0">${i + 1}</span>
+  allItems.forEach(i => { itemCount[i.item] = (itemCount[i.item] || 0) + 1; });
+  const topItemsList = Object.entries(itemCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  document.getElementById('topItems').innerHTML = topItemsList.length
+    ? topItemsList.map(([item, cnt], idx) => {
+        const iResolved = allItems.filter(i => i.item === item && i.status === 'Resolved').length;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--gray-100)">
+          <span style="width:24px;height:24px;background:var(--green-50);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--green-800);flex-shrink:0">${idx + 1}</span>
           <span style="flex:1;font-size:.88rem">${item}</span>
-          <span class="badge badge-done">${cnt} request${cnt > 1 ? 's' : ''}</span>
-        </div>`)
-      .join('')
+          <span class="badge badge-done" style="margin-right:4px">${cnt} total</span>
+          <span class="badge badge-${iResolved===cnt?'done':'pending'}">${iResolved}/${cnt} resolved</span>
+        </div>`;
+      }).join('')
     : '<p style="padding:12px;color:var(--gray-500);font-size:.85rem">No data for selected period.</p>';
 };
 
@@ -1159,20 +1256,82 @@ window.exportToExcel = function() {
   showToast("📥 Excel file downloaded!");
 };
 
+// ── Unit abbreviation map for memo reference codes ─────
+const UNIT_ABBR = {
+  "Medical Sup":"MED","Deputy Chief M. O":"DCM","HASS":"HAS","Head of Finance":"FIN",
+  "Head of Pharmacy":"PHM","Head of Nursing Services":"NRS","Auditor":"AUD",
+  "General Administration":"ADM","Laboratory":"LAB","Maternity Theatre":"MTH",
+  "Anaesthesia":"ANA","ART/STI":"ART","Dental":"DEN","Dressing Unit":"DRS",
+  "ENT":"ENT","Family Planning":"FPL","Halcrow Public Health":"HPH","Eye":"EYE",
+  "Health Information Unit":"HIU","Chest Unit":"CHT","Maintenance":"MNT",
+  "Maternity Labour Ward":"MLW","Maternity Antenatal":"MAN","Nutrition Unit":"NUT",
+  "Psychiatry Unit":"PSY","Recovery Ward":"RCV","Herbal":"HRB",
+  "Adolescent Unit":"ADO","Ultrasound Scan":"USS","Dietician":"DIT",
+  "Inservice Unit":"INS","OPD Unit":"OPD","Quality Assurance":"QAS",
+  "ECG":"ECG","Wellness Clinic":"WLC","Head of IT":"ITD",
+  "Head of Claims Office":"CLM","Accounts":"ACC","Procurement":"PRO","Stores":"STR"
+};
+
+async function getNextMemoNumber(unit) {
+  const year = new Date().getFullYear();
+  const key = 'memoCount_' + unit.replace(/\s+/g,'_') + '_' + year;
+  let count = 1;
+  if (db) {
+    try {
+      const snap = await getDoc(doc(db, 'config', 'memoCounters'));
+      const data = snap.exists() ? snap.data() : {};
+      count = (data[key] || 0) + 1;
+      await setDoc(doc(db, 'config', 'memoCounters'), { ...data, [key]: count });
+    } catch(e) {
+      count = parseInt(localStorage.getItem(key) || '0') + 1;
+      localStorage.setItem(key, count);
+    }
+  } else {
+    count = parseInt(localStorage.getItem(key) || '0') + 1;
+    localStorage.setItem(key, count);
+  }
+  return count;
+}
+
 // ── Memo ───────────────────────────────────────────────
-window.generateMemo = function() {
+window.generateMemo = async function() {
   const subjectV = document.getElementById('memoSubject').value;
   const bodyV    = document.getElementById('memoBody').value;
   if (!subjectV || !bodyV) { showToast("Please fill in Subject and Memo body", true); return; }
-  const dateV = document.getElementById('memoDate').value;
-  document.getElementById('pMemoFrom').textContent    = document.getElementById('memoFrom').value || currentUser;
-  document.getElementById('pMemoTo').textContent      = document.getElementById('memoTo').value;
-  document.getElementById('pMemoDate').textContent    = dateV ? new Date(dateV).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'}) : '—';
-  document.getElementById('pMemoRef').textContent     = document.getElementById('memoRef').value || '—';
-  document.getElementById('pMemoSubject').textContent = subjectV.toUpperCase();
-  document.getElementById('pMemoBody').textContent    = bodyV;
-  document.getElementById('memoPrint').style.display  = 'block';
+
+  const fromUnit = document.getElementById('memoFrom').value || currentUser;
+  const dateV    = document.getElementById('memoDate').value;
+  const year     = dateV ? new Date(dateV).getFullYear() : new Date().getFullYear();
+  const abbr     = UNIT_ABBR[fromUnit] || fromUnit.substring(0,3).toUpperCase();
+
+  // Auto-generate reference if not manually set
+  let refV = document.getElementById('memoRef').value.trim();
+  if (!refV) {
+    const num = await getNextMemoNumber(fromUnit);
+    refV = \`TUH/\${abbr}/\${year}/\${String(num).padStart(3,'0')}\`;
+    document.getElementById('memoRef').value = refV;
+  }
+
+  const formattedDate = dateV
+    ? new Date(dateV).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})
+    : '—';
+  const toV = document.getElementById('memoTo').value;
+
+  // Populate BOTH copies
+  ['','2'].forEach(sfx => {
+    const el = id => document.getElementById(id + sfx);
+    if (!el('pMemoDate')) return;
+    el('pMemoDate').textContent    = formattedDate;
+    el('pMemoRef').textContent     = refV;
+    el('pMemoFrom').textContent    = fromUnit;
+    el('pMemoTo').textContent      = toV;
+    el('pMemoSubject').textContent = subjectV.toUpperCase();
+    el('pMemoBody').textContent    = bodyV;
+  });
+
+  document.getElementById('memoPrint').style.display = 'block';
   document.getElementById('memoPrint').scrollIntoView({ behavior: 'smooth' });
+  showToast('Memo generated — Ref: ' + refV);
 };
 
 // ── Password Management ────────────────────────────────
