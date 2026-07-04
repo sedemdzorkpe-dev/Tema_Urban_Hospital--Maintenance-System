@@ -428,6 +428,10 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Manage Passwords
     </button>
+    <button class="nav-tab" onclick="switchTab('addunit')" id="tab-addunit" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Add New Unit
+    </button>
     <button class="nav-tab" onclick="switchTab('allmemos')" id="tab-allmemos" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       All Memos
@@ -759,6 +763,49 @@ textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 
     </div>
   </div>
 
+  <!-- ── ADD NEW UNIT PAGE (Admin only) ── -->
+  <div id="page-addunit" class="page-content">
+    <div class="page-hero">
+      <div class="page-hero-icon">➕</div>
+      <div class="page-hero-text"><h2>Add New Unit</h2><p>Add a new department or unit to the system with a login password</p></div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <div class="section-label">New Unit Details</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Unit / Department Name</label>
+          <input type="text" id="newUnitName" placeholder="e.g. Physiotherapy">
+        </div>
+        <div class="form-group">
+          <label>Unit Abbreviation (3–4 letters)</label>
+          <input type="text" id="newUnitAbbr" placeholder="e.g. PHY" maxlength="4" style="text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label>Login Password</label>
+          <input type="text" id="newUnitPassword" placeholder="Set a password for this unit">
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <div class="select-wrap">
+            <select id="newUnitRole">
+              <option value="staff">Staff (Fault Reporting only)</option>
+              <option value="super">Supervisor (Full Admin View)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="addNewUnit()" style="margin-top:8px">➕ Add Unit to System</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">All Units in System</div>
+        <button class="btn-secondary" onclick="loadCustomUnits()">Refresh</button>
+      </div>
+      <div id="allUnitsList"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
   <!-- ── MEMO VIEW MODAL (Admin print any unit memo) ── -->
   <div id="memoViewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;overflow-y:auto;padding:20px">
     <div style="background:white;max-width:700px;margin:0 auto;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
@@ -824,7 +871,8 @@ try {
 }
 
 // -- Constants -----------------------------------------
-const ADMIN_UNIT = "Maintenance";
+const ADMIN_UNIT   = "Maintenance";
+const SUPER_UNITS  = ["Medical Sup", "HASS"]; // get full admin view, cannot manage passwords/units
 const DEFAULT_ADMIN_PASS = "admin2024";
 const DEFAULT_STAFF_PASS = "tema2024";
 
@@ -885,7 +933,7 @@ window.doLogout = function() {
   document.getElementById('loginPage').style.flexDirection = 'column';
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginUnit').value = '';
-  ['tab-dashboard','tab-allreports','tab-passwords','tab-allmemos'].forEach(id => document.getElementById(id).style.display = 'none');
+  ['tab-dashboard','tab-allreports','tab-passwords','tab-allmemos','tab-addunit'].forEach(id => document.getElementById(id).style.display = 'none');
   switchTab('report');
 };
 
@@ -901,6 +949,7 @@ window.switchTab = function(name) {
   if (name === 'passwords')  renderPwList();
   if (name === 'memo')       loadMyMemos();
   if (name === 'allmemos')   loadAllMemos();
+  if (name === 'addunit')    renderAddUnitPage();
 };
 
 // -- Priority -------------------------------------------
@@ -1820,6 +1869,167 @@ window.saveAllPasswords = async function() {
   }
 };
 
+//    Load custom units from Firebase                   
+let customUnits = []; // extra units added by admin beyond built-in list
+
+window.loadCustomUnits = async function() {
+  try {
+    if (db) {
+      const snap = await getDoc(doc(db, 'config', 'customUnits'));
+      customUnits = snap.exists() ? (snap.data().units || []) : [];
+    } else {
+      customUnits = JSON.parse(localStorage.getItem('tuh_customUnits') || '[]');
+    }
+  } catch(e) { customUnits = []; }
+  renderAddUnitPage();
+};
+
+//    Render the Add Unit page list                      
+window.renderAddUnitPage = function() {
+  const el = document.getElementById('allUnitsList');
+  if (!el) return;
+
+  // Combine built-in + custom units
+  const builtIn = ALL_UNITS.map(u => ({ name: u, custom: false, abbr: UNIT_ABBR[u] || u.substring(0,3).toUpperCase(), role: SUPER_UNITS.includes(u) ? 'super' : (u === ADMIN_UNIT ? 'admin' : 'staff') }));
+  const customs  = customUnits.map(u => ({ ...u, custom: true }));
+  const all      = [...builtIn, ...customs];
+
+  el.innerHTML = '<div class="table-wrap"><table class="data-table"><thead><tr>' +
+    '<th>#</th><th>Unit Name</th><th>Abbr.</th><th>Role</th><th>Password</th><th>Type</th><th>Action</th>' +
+    '</tr></thead><tbody>' +
+    all.map((u, i) => {
+      const pwStatus = unitPasswords[u.name] ? 'Custom set' : (u.name === ADMIN_UNIT ? 'admin2024' : 'tema2024');
+      const roleLabel = u.role === 'super' ? '<span class="badge badge-progress">Supervisor</span>'
+        : u.role === 'admin' ? '<span class="badge badge-done">Admin</span>'
+        : '<span class="badge badge-pending">Staff</span>';
+      const deleteBtn = u.custom
+        ? '<button class="btn-danger" style="padding:4px 10px;font-size:.78rem" data-uname="' + u.name + '" onclick="deleteCustomUnit(this)">Remove</button>'
+        : '<span style="font-size:.75rem;color:var(--gray-400)">Built-in</span>';
+      return '<tr>' +
+        '<td>' + (i+1) + '</td>' +
+        '<td style="font-weight:600">' + u.name + '</td>' +
+        '<td><span style="font-weight:700;color:var(--green-700)">' + u.abbr + '</span></td>' +
+        '<td>' + roleLabel + '</td>' +
+        '<td style="font-size:.8rem;color:var(--gray-500)">' + pwStatus + '</td>' +
+        '<td><span style="font-size:.75rem;color:var(--gray-400)">' + (u.custom ? 'Custom' : 'Built-in') + '</span></td>' +
+        '<td>' + deleteBtn + '</td>' +
+        '</tr>';
+    }).join('') +
+    '</tbody></table></div>';
+};
+
+//    Add a new unit                                     
+window.addNewUnit = async function() {
+  const name = document.getElementById('newUnitName').value.trim();
+  const abbr = document.getElementById('newUnitAbbr').value.trim().toUpperCase();
+  const pw   = document.getElementById('newUnitPassword').value.trim();
+  const role = document.getElementById('newUnitRole').value;
+
+  if (!name) { showToast('Please enter a unit name', true); return; }
+  if (!abbr || abbr.length < 2) { showToast('Please enter a 2-4 letter abbreviation', true); return; }
+  if (!pw || pw.length < 4) { showToast('Password must be at least 4 characters', true); return; }
+
+  // Check for duplicates
+  const allNames = [...ALL_UNITS, ...customUnits.map(u => u.name)];
+  if (allNames.map(n => n.toLowerCase()).includes(name.toLowerCase())) {
+    showToast('A unit with this name already exists', true); return;
+  }
+
+  const newUnit = { name, abbr, role, addedAt: new Date().toISOString() };
+  customUnits.push(newUnit);
+
+  // Save password
+  unitPasswords[name] = pw;
+
+  // Update SUPER_UNITS in memory if role is super
+  if (role === 'super' && !SUPER_UNITS.includes(name)) SUPER_UNITS.push(name);
+
+  // Update UNIT_ABBR in memory
+  UNIT_ABBR[name] = abbr;
+
+  try {
+    if (db) {
+      await setDoc(doc(db, 'config', 'customUnits'), { units: customUnits });
+      await setDoc(doc(db, 'config', 'passwords'), unitPasswords);
+      showToast('[OK] Unit "' + name + '" added successfully!');
+    } else {
+      localStorage.setItem('tuh_customUnits', JSON.stringify(customUnits));
+      localStorage.setItem('tuh_passwords', JSON.stringify(unitPasswords));
+      showToast('[OK] Unit "' + name + '" added (local)');
+    }
+    // Add to login dropdown
+    addUnitToDropdown(name);
+    // Clear form
+    document.getElementById('newUnitName').value = '';
+    document.getElementById('newUnitAbbr').value = '';
+    document.getElementById('newUnitPassword').value = '';
+    renderAddUnitPage();
+  } catch(e) {
+    showToast('Error adding unit: ' + e.message, true);
+  }
+};
+
+//    Add unit to login dropdown dynamically             
+function addUnitToDropdown(name) {
+  const sel = document.getElementById('loginUnit');
+  if (!sel) return;
+  // Check not already there
+  const exists = Array.from(sel.options).some(o => o.value === name);
+  if (!exists) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  }
+}
+
+//    Delete a custom unit                               
+window.deleteCustomUnit = async function(btn) {
+  const name = btn.getAttribute('data-uname');
+  showConfirm(
+    'Remove Unit',
+    'Remove "' + name + '" from the system? This does not delete their submitted reports.',
+    async function() {
+      customUnits = customUnits.filter(u => u.name !== name);
+      // Remove from SUPER_UNITS if present
+      const si = SUPER_UNITS.indexOf(name);
+      if (si > -1) SUPER_UNITS.splice(si, 1);
+      // Remove from login dropdown
+      const sel = document.getElementById('loginUnit');
+      if (sel) {
+        Array.from(sel.options).forEach(o => { if (o.value === name) sel.removeChild(o); });
+      }
+      try {
+        if (db) {
+          await setDoc(doc(db, 'config', 'customUnits'), { units: customUnits });
+        } else {
+          localStorage.setItem('tuh_customUnits', JSON.stringify(customUnits));
+        }
+        showToast('[OK] Unit "' + name + '" removed');
+        renderAddUnitPage();
+      } catch(e) { showToast('Error removing unit: ' + e.message, true); }
+    }
+  );
+};
+
+//    Load custom units on login                         
+async function loadCustomUnitsOnLogin() {
+  try {
+    if (db) {
+      const snap = await getDoc(doc(db, 'config', 'customUnits'));
+      customUnits = snap.exists() ? (snap.data().units || []) : [];
+    } else {
+      customUnits = JSON.parse(localStorage.getItem('tuh_customUnits') || '[]');
+    }
+    // Add custom units to login dropdown and SUPER_UNITS / UNIT_ABBR
+    customUnits.forEach(u => {
+      addUnitToDropdown(u.name);
+      if (u.role === 'super' && !SUPER_UNITS.includes(u.name)) SUPER_UNITS.push(u.name);
+      if (u.abbr) UNIT_ABBR[u.name] = u.abbr;
+    });
+  } catch(e) { console.warn('loadCustomUnits:', e.message); }
+}
+
 // -- Helpers --------------------------------------------
 function capFirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
 function statusClass(s) { return s === 'Resolved' ? 'done' : s === 'In Progress' ? 'progress' : 'pending'; }
@@ -1834,7 +2044,7 @@ window.showToast = function(msg, isError = false) {
 // -- Shared login setup (called from doLogin and session restore) ----
 async function setupSession(unit) {
   currentUser = unit;
-  isAdmin     = unit === ADMIN_UNIT;
+  isAdmin     = unit === ADMIN_UNIT || SUPER_UNITS.includes(unit);
 
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('appPage').style.display   = 'block';
@@ -1849,13 +2059,18 @@ async function setupSession(unit) {
   if (isAdmin) {
     document.getElementById('tab-dashboard').style.display  = 'flex';
     document.getElementById('tab-allreports').style.display = 'flex';
-    document.getElementById('tab-passwords').style.display  = 'flex';
     document.getElementById('tab-allmemos').style.display   = 'flex';
     await loadAllReports();
-    renderPwList();
+    // Only full admin (Maintenance) gets password + unit management
+    if (unit === ADMIN_UNIT) {
+      document.getElementById('tab-passwords').style.display  = 'flex';
+      document.getElementById('tab-addunit').style.display    = 'flex';
+      renderPwList();
+    }
   }
   await loadMyReports();
   await loadMyMemos();
+  if (unit === ADMIN_UNIT) await loadCustomUnits();
 }
 
 // -- Init -----------------------------------------------
@@ -1863,6 +2078,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('rptDate').value  = today;
   document.getElementById('memoDate').value = today;
+
+  // Load custom units so they appear in the login dropdown immediately
+  await loadCustomUnitsOnLogin();
 
   // Restore session if user was previously logged in
   const saved = sessionStorage.getItem('tuh_session');
